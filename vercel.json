@@ -1,8 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/cron/generate-auctions",
-      "schedule": "0 */6 * * *"
-    }
-  ]
-}
