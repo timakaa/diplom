@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/layout/Layout";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileOverview from "@/components/profile/ProfileOverview";
@@ -39,30 +40,23 @@ const biddingHistory = [
   },
 ];
 
-// Моковые данные для избранного
-const favoriteAuctions = [
-  {
-    id: 1,
-    title: "2022 Audi Q8 55 TFSI",
-    price: "5 800 000 ₽",
-    image: "/placeholder.svg?height=100&width=200",
-    timeLeft: "1д 8ч",
-    bids: 12,
-  },
-  {
-    id: 2,
-    title: "2021 Porsche Cayenne",
-    price: "6 200 000 ₽",
-    image: "/placeholder.svg?height=100&width=200",
-    timeLeft: "6ч 30м",
-    bids: 25,
-  },
-];
-
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Получаем избранные аукционы
+  const { data: favoritesData, isLoading: isLoadingFavorites } = useQuery({
+    queryKey: ["favorites"],
+    queryFn: async () => {
+      const response = await fetch("/api/favorites");
+      if (!response.ok) throw new Error("Ошибка загрузки избранного");
+      return response.json();
+    },
+    enabled: !!session?.user,
+  });
+
+  const favoriteAuctions = favoritesData?.favorites || [];
 
   // Редирект на страницу входа, если пользователь не авторизован
   useEffect(() => {
@@ -71,7 +65,7 @@ export default function ProfilePage() {
     }
   }, [status, router]);
 
-  if (status === "loading") {
+  if (status === "loading" || isLoadingFavorites) {
     return (
       <Layout>
         <div className='container py-12'>
@@ -127,6 +121,7 @@ export default function ProfilePage() {
               biddingHistory={biddingHistory}
               favoriteAuctions={favoriteAuctions}
               onTabChange={setActiveTab}
+              user={session.user}
             />
           </TabsContent>
 

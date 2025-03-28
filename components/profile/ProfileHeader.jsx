@@ -31,7 +31,11 @@ export default function ProfileHeader({ user }) {
           <h2 className='font-semibold text-lg'>{user.name}</h2>
           <p className='text-sm text-muted-foreground'>{user.email}</p>
           <Badge variant='outline' className='mt-1'>
-            Базовый аккаунт
+            {user.plan
+              ? `${
+                  user.plan.charAt(0).toUpperCase() + user.plan.slice(1)
+                } аккаунт`
+              : "Нет плана"}
           </Badge>
         </div>
       </div>

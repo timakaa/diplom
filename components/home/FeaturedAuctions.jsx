@@ -1,48 +1,28 @@
+"use client";
+
 import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import AuctionCard from "@/components/AuctionCard";
+import { useQuery } from "@tanstack/react-query";
 
-// Sample auction data
-const auctions = [
-  {
-    id: 1,
-    title: "Porsche 911 Carrera",
-    price: "₽8,500,000",
-    endTime: "2 дня",
-    bids: 12,
-    image: "/placeholder.svg?height=400&width=600",
-  },
-  {
-    id: 2,
-    title: "BMW M5 Competition",
-    price: "₽7,200,000",
-    endTime: "4 часа",
-    bids: 20,
-    image: "/placeholder.svg?height=400&width=600",
-    endingSoon: true,
-  },
-  {
-    id: 3,
-    title: "Mercedes-Benz G-Class",
-    price: "₽12,300,000",
-    endTime: "1 день",
-    bids: 8,
-    image: "/placeholder.svg?height=400&width=600",
-  },
-  {
-    id: 4,
-    title: "Audi RS7 Sportback",
-    price: "₽9,750,000",
-    endTime: "5 дней",
-    bids: 6,
-    image: "/placeholder.svg?height=400&width=600",
-    noReserve: true,
-  },
-];
+const fetchFeaturedAuctions = async () => {
+  const response = await fetch("/api/auctions?limit=3&status=active");
+  if (!response.ok) {
+    throw new Error("Ошибка загрузки аукционов");
+  }
+  return response.json();
+};
 
 export default function FeaturedAuctions() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["featured-auctions"],
+    queryFn: fetchFeaturedAuctions,
+  });
+
+  const auctions = data?.auctions || [];
+
   return (
     <section className='w-full py-12 md:py-24 lg:py-32 bg-muted/50'>
       <div className='container px-4 md:px-6'>
@@ -68,23 +48,65 @@ export default function FeaturedAuctions() {
           </TabsList>
           <TabsContent value='ending-soon' className='mt-6'>
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
-              {auctions.map((auction) => (
-                <AuctionCard key={auction.id} auction={auction} />
-              ))}
+              {isLoading ? (
+                <div className='col-span-full text-center py-8'>
+                  Загрузка...
+                </div>
+              ) : error ? (
+                <div className='col-span-full text-center py-8 text-red-500'>
+                  Ошибка загрузки аукционов
+                </div>
+              ) : auctions.length === 0 ? (
+                <div className='col-span-full text-center py-8'>
+                  Аукционы не найдены
+                </div>
+              ) : (
+                auctions.map((auction) => (
+                  <AuctionCard key={auction.id} auction={auction} />
+                ))
+              )}
             </div>
           </TabsContent>
           <TabsContent value='new-arrivals' className='mt-6'>
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
-              {auctions.map((auction) => (
-                <AuctionCard key={auction.id} auction={auction} />
-              ))}
+              {isLoading ? (
+                <div className='col-span-full text-center py-8'>
+                  Загрузка...
+                </div>
+              ) : error ? (
+                <div className='col-span-full text-center py-8 text-red-500'>
+                  Ошибка загрузки аукционов
+                </div>
+              ) : auctions.length === 0 ? (
+                <div className='col-span-full text-center py-8'>
+                  Аукционы не найдены
+                </div>
+              ) : (
+                auctions.map((auction) => (
+                  <AuctionCard key={auction.id} auction={auction} />
+                ))
+              )}
             </div>
           </TabsContent>
           <TabsContent value='no-reserve' className='mt-6'>
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
-              {auctions.map((auction) => (
-                <AuctionCard key={auction.id} auction={auction} />
-              ))}
+              {isLoading ? (
+                <div className='col-span-full text-center py-8'>
+                  Загрузка...
+                </div>
+              ) : error ? (
+                <div className='col-span-full text-center py-8 text-red-500'>
+                  Ошибка загрузки аукционов
+                </div>
+              ) : auctions.length === 0 ? (
+                <div className='col-span-full text-center py-8'>
+                  Аукционы не найдены
+                </div>
+              ) : (
+                auctions.map((auction) => (
+                  <AuctionCard key={auction.id} auction={auction} />
+                ))
+              )}
             </div>
           </TabsContent>
         </Tabs>
