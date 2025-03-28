@@ -8,7 +8,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Heart, Clock, Trash2 } from "lucide-react";
+import { Heart, Clock, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -146,26 +146,28 @@ export default function ProfileFavorites() {
               })}
             </div>
             {totalPages > 1 && (
-              <div className='flex justify-center gap-2 mt-4'>
-                <Button
-                  variant='outline'
-                  size='sm'
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                >
-                  Назад
-                </Button>
-                <span className='py-2 px-3'>
+              <div className='flex justify-between items-center mt-4'>
+                <div className='text-sm text-muted-foreground'>
                   Страница {page} из {totalPages}
-                </span>
-                <Button
-                  variant='outline'
-                  size='sm'
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                >
-                  Вперед
-                </Button>
+                </div>
+                <div className='flex gap-2'>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    <ChevronLeft className='h-4 w-4' />
+                  </Button>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    <ChevronRight className='h-4 w-4' />
+                  </Button>
+                </div>
               </div>
             )}
           </div>

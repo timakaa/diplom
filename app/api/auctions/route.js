@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/index.js";
-import { auctions } from "@/lib/db/schema.js";
+import { auctions, bids } from "@/lib/db/schema.js";
 import { desc } from "drizzle-orm";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, count, inArray } from "drizzle-orm";
 
 export async function GET(request) {
   try {
@@ -35,8 +35,36 @@ export async function GET(request) {
     // Execute query
     const results = await query;
 
+    // Get bid counts for all fetched auctions
+    const auctionIds = results.map((auction) => auction.id);
+
+    // If we have auctions, get their bid counts
+    let bidCountsMap = {};
+    if (auctionIds.length > 0) {
+      const bidCounts = await db
+        .select({
+          auctionId: bids.auctionId,
+          bidCount: count(),
+        })
+        .from(bids)
+        .where(inArray(bids.auctionId, auctionIds))
+        .groupBy(bids.auctionId);
+
+      // Create a map of auction ID to bid count
+      bidCountsMap = bidCounts.reduce((map, item) => {
+        map[item.auctionId] = item.bidCount;
+        return map;
+      }, {});
+    }
+
+    // Add bid counts to auction data
+    const auctionsWithBidCounts = results.map((auction) => ({
+      ...auction,
+      bids: bidCountsMap[auction.id] || 0,
+    }));
+
     return NextResponse.json({
-      auctions: results,
+      auctions: auctionsWithBidCounts,
       pagination: {
         total: totalCount,
         page,

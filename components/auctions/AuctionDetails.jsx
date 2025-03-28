@@ -12,6 +12,7 @@ import AuctionHeader from "./AuctionHeader";
 import AuctionSpecs from "./AuctionSpecs";
 import AuctionDescription from "./AuctionDescription";
 import AuctionBidPanel from "./AuctionBidPanel";
+import AuctionBidsHistory from "./AuctionBidsHistory";
 
 const fetchAuction = async (id) => {
   const response = await fetch(`/api/auctions/${id}`);
@@ -189,6 +190,10 @@ export default function AuctionDetails({ id }) {
       queryClient.invalidateQueries({
         queryKey: ["userBid", parseInt(id), session?.user?.id],
       });
+      // Обновляем историю всех ставок для этого аукциона
+      queryClient.invalidateQueries({
+        queryKey: ["auctionBids", parseInt(id)],
+      });
 
       // Обновляем баланс пользователя в сессии
       if (session?.user) {
@@ -285,6 +290,9 @@ export default function AuctionDetails({ id }) {
 
             {/* Описание */}
             <AuctionDescription description={auction.description} />
+
+            {/* История ставок */}
+            <AuctionBidsHistory auctionId={parseInt(id)} />
           </div>
         </div>
 

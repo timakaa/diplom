@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X, User, LogOut, Wallet } from "lucide-react";
+import { X, User, LogOut, Wallet, ShieldCheck } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import {
   ResponsiveModal,
@@ -142,6 +142,19 @@ export default function MobileMenu({ isOpen, onClose }) {
                     Личный кабинет
                   </Button>
                 </Link>
+
+                {/* Админ-панель (только для администраторов) */}
+                {session.user.isAdmin && (
+                  <Link href='/admin' onClick={onClose}>
+                    <Button
+                      variant='outline'
+                      className='w-full justify-center gap-2'
+                    >
+                      <ShieldCheck className='h-4 w-4' />
+                      Админ-панель
+                    </Button>
+                  </Link>
+                )}
 
                 {/* Кнопка выхода */}
                 <Button

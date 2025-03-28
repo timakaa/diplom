@@ -11,6 +11,7 @@ import {
   ChevronDown,
   Wallet,
   Plus,
+  ShieldCheck,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -100,6 +101,17 @@ export default function UserAuthInfo() {
                 <span>Личный кабинет</span>
               </DropdownMenuItem>
             </Link>
+
+            {/* Админ-панель (только для администраторов) */}
+            {session.user.isAdmin && (
+              <Link href='/admin'>
+                <DropdownMenuItem className='cursor-pointer px-3 py-2.5 rounded-md'>
+                  <ShieldCheck className='mr-3 h-5 w-5' />
+                  <span>Админ-панель</span>
+                </DropdownMenuItem>
+              </Link>
+            )}
+
             <DropdownMenuItem
               onClick={() => signOut()}
               className='cursor-pointer text-destructive focus:text-destructive px-3 py-2.5 rounded-md mt-1'
@@ -143,6 +155,17 @@ export default function UserAuthInfo() {
                 <span>Личный кабинет</span>
               </DropdownMenuItem>
             </Link>
+
+            {/* Админ-панель (только для администраторов) */}
+            {session.user.isAdmin && (
+              <Link href='/admin'>
+                <DropdownMenuItem className='cursor-pointer px-3 py-2.5 rounded-md'>
+                  <ShieldCheck className='mr-3 h-5 w-5' />
+                  <span>Админ-панель</span>
+                </DropdownMenuItem>
+              </Link>
+            )}
+
             <DropdownMenuItem
               onClick={() => signOut()}
               className='cursor-pointer text-destructive focus:text-destructive px-3 py-2.5 rounded-md mt-1'

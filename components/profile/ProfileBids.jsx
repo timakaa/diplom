@@ -74,7 +74,15 @@ export default function ProfileBids() {
                     <div className='text-muted-foreground'>
                       {bid.formattedDate}
                       <br />
-                      {bid.formattedTime}
+                      {new Date(bid.createdAt)
+                        .getUTCHours()
+                        .toString()
+                        .padStart(2, "0")}
+                      :
+                      {new Date(bid.createdAt)
+                        .getUTCMinutes()
+                        .toString()
+                        .padStart(2, "0")}
                     </div>
                     <div className='col-span-2'>
                       <Link
