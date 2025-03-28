@@ -43,6 +43,13 @@
       "when": 1743182329481,
       "tag": "0005_cheerful_roulette",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1743197013210,
+      "tag": "0006_slim_felicia_hardy",
+      "breakpoints": true
     }
   ]
 }

@@ -4,7 +4,14 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { User, LogOut, UserCircle, ChevronDown } from "lucide-react";
+import {
+  User,
+  LogOut,
+  UserCircle,
+  ChevronDown,
+  Wallet,
+  Plus,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +24,14 @@ import {
 export default function UserAuthInfo() {
   const { data: session, status } = useSession();
   const loading = status === "loading";
+
+  const formatBalance = (balance) => {
+    return new Intl.NumberFormat("ru-RU", {
+      style: "currency",
+      currency: "RUB",
+      maximumFractionDigits: 0,
+    }).format(balance || 0);
+  };
 
   if (loading) {
     return (
@@ -33,7 +48,13 @@ export default function UserAuthInfo() {
 
   if (session) {
     return (
-      <div className='flex items-center'>
+      <div className='flex items-center gap-3'>
+        {/* Отображение баланса */}
+        <div className='hidden md:flex items-center gap-2 text-sm text-muted-foreground border rounded-md px-3 py-1.5'>
+          <Wallet className='h-4 w-4' />
+          <span>{formatBalance(session.user.balance)}</span>
+        </div>
+
         {/* Десктопная версия - выпадающее меню */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild className='hidden md:flex'>
@@ -72,6 +93,7 @@ export default function UserAuthInfo() {
               Мой аккаунт
             </DropdownMenuLabel>
             <DropdownMenuSeparator className='my-2' />
+
             <Link href='/profile'>
               <DropdownMenuItem className='cursor-pointer px-3 py-2.5 rounded-md'>
                 <UserCircle className='mr-3 h-5 w-5' />
@@ -114,6 +136,7 @@ export default function UserAuthInfo() {
               {session.user.name || "Пользователь"}
             </DropdownMenuLabel>
             <DropdownMenuSeparator className='my-2' />
+
             <Link href='/profile'>
               <DropdownMenuItem className='cursor-pointer px-3 py-2.5 rounded-md'>
                 <UserCircle className='mr-3 h-5 w-5' />

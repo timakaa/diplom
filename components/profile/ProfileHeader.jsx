@@ -1,9 +1,17 @@
 import Image from "next/image";
-import { User } from "lucide-react";
+import { User, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export default function ProfileHeader({ user }) {
   if (!user) return null;
+
+  const formatBalance = (balance) => {
+    return new Intl.NumberFormat("ru-RU", {
+      style: "currency",
+      currency: "RUB",
+      maximumFractionDigits: 0,
+    }).format(balance || 0);
+  };
 
   return (
     <div className='flex flex-col md:flex-row gap-6 items-start mb-8'>
@@ -30,13 +38,19 @@ export default function ProfileHeader({ user }) {
         <div>
           <h2 className='font-semibold text-lg'>{user.name}</h2>
           <p className='text-sm text-muted-foreground'>{user.email}</p>
-          <Badge variant='outline' className='mt-1'>
-            {user.plan
-              ? `${
-                  user.plan.charAt(0).toUpperCase() + user.plan.slice(1)
-                } аккаунт`
-              : "Нет плана"}
-          </Badge>
+          <div className='flex flex-wrap gap-2 mt-1'>
+            <Badge variant='outline'>
+              {user.plan
+                ? `${
+                    user.plan.charAt(0).toUpperCase() + user.plan.slice(1)
+                  } аккаунт`
+                : "Нет плана"}
+            </Badge>
+            <Badge variant='outline' className='flex items-center gap-1'>
+              <Wallet className='h-3 w-3' />
+              {formatBalance(user.balance)}
+            </Badge>
+          </div>
         </div>
       </div>
     </div>

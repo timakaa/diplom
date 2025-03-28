@@ -8,34 +8,65 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Car, Clock, Shield, FileText } from "lucide-react";
+import { Car, Clock, Shield, FileText, Wallet, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
+import { useBids } from "@/lib/hooks/useBids";
 
 export default function ProfileOverview({
-  biddingHistory,
   favoriteAuctions,
   onTabChange,
   user,
 }) {
+  const { bids: recentBids, isLoading: isLoadingBids } = useBids(1, 2);
+
+  const formatBalance = (balance) => {
+    return new Intl.NumberFormat("ru-RU", {
+      style: "currency",
+      currency: "RUB",
+      maximumFractionDigits: 0,
+    }).format(balance || 0);
+  };
+
   return (
     <div className='space-y-6'>
       {/* Карточки со статистикой */}
-      <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+      <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
         <StatCard
           title='Активные ставки'
-          value='1'
+          value={recentBids
+            .filter((bid) => bid.status === "active")
+            .length.toString()}
           description='Активный аукцион'
           icon={<Car className='h-4 w-4 text-muted-foreground' />}
         />
         <StatCard
           title='Выигранные аукционы'
-          value='1'
+          value={recentBids
+            .filter((bid) => bid.status === "won")
+            .length.toString()}
           description='Успешная сделка'
           icon={<FileText className='h-4 w-4 text-muted-foreground' />}
         />
+        <Card>
+          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+            <CardTitle className='text-sm font-medium'>Баланс</CardTitle>
+            <Wallet className='h-4 w-4 text-muted-foreground' />
+          </CardHeader>
+          <CardContent>
+            <div className='space-y-2'>
+              <div className='text-2xl font-bold'>
+                {formatBalance(user?.balance)}
+              </div>
+              <p className='text-xs text-muted-foreground'>Доступно на счете</p>
+              <p className='text-xs text-muted-foreground mt-1'>
+                Баланс пополняется при покупке плана подписки
+              </p>
+            </div>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
             <CardTitle className='text-sm font-medium'>Статус</CardTitle>
@@ -68,9 +99,13 @@ export default function ProfileOverview({
           <CardDescription>История ваших ставок</CardDescription>
         </CardHeader>
         <CardContent>
-          {biddingHistory.length > 0 ? (
+          {isLoadingBids ? (
+            <div className='flex justify-center py-4'>
+              <Loader2 className='h-6 w-6 animate-spin text-muted-foreground' />
+            </div>
+          ) : recentBids.length > 0 ? (
             <div className='space-y-4'>
-              {biddingHistory.slice(0, 2).map((bid) => (
+              {recentBids.map((bid) => (
                 <div
                   key={bid.id}
                   className='flex items-center justify-between border-b pb-3'
@@ -78,25 +113,38 @@ export default function ProfileOverview({
                   <div className='flex items-start gap-3'>
                     <Clock className='h-5 w-5 text-muted-foreground mt-0.5' />
                     <div>
-                      <p className='font-medium'>{bid.car}</p>
+                      <Link
+                        href={`/auctions/${bid.auctionId}`}
+                        className='font-medium hover:underline'
+                      >
+                        Аукцион №{bid.auctionId}
+                      </Link>
                       <p className='text-sm text-muted-foreground'>
-                        {bid.date} · {bid.time}
+                        {bid.formattedDate} · {bid.formattedTime}
                       </p>
                     </div>
                   </div>
                   <div className='text-right'>
-                    <p className='font-medium'>{bid.amount}</p>
+                    <p className='font-medium'>{bid.formattedAmount}</p>
                     <Badge
                       variant={
-                        bid.status === "Активна"
+                        bid.status === "active"
                           ? "outline"
-                          : bid.status === "Выиграна"
+                          : bid.status === "won"
                           ? "default"
-                          : "secondary"
+                          : bid.status === "outbid"
+                          ? "secondary"
+                          : "destructive"
                       }
                       className='mt-1'
                     >
-                      {bid.status}
+                      {bid.status === "active"
+                        ? "Активна"
+                        : bid.status === "won"
+                        ? "Выиграна"
+                        : bid.status === "outbid"
+                        ? "Перебита"
+                        : "Истекла"}
                     </Badge>
                   </div>
                 </div>
@@ -108,7 +156,7 @@ export default function ProfileOverview({
             </p>
           )}
         </CardContent>
-        {biddingHistory.length > 0 && (
+        {recentBids.length > 0 && (
           <CardFooter>
             <Button
               variant='outline'

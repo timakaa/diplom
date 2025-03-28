@@ -32,24 +32,16 @@ export const authOptions = {
       return token;
     },
     async session({ session, token, user }) {
-      console.log("Session Callback - User Data:", user);
-      console.log("Session Callback - Current Session:", session);
-      console.log("Session Callback - Token:", token);
-
       if (session?.user) {
         // Получаем полные данные пользователя из базы
         const dbUser = await db.query.users.findFirst({
           where: eq(users.id, token.id),
         });
 
-        console.log("Session Callback - DB User:", dbUser);
-
         session.user.id = token.id;
         session.user.plan = dbUser?.plan;
         session.user.balance = dbUser?.balance;
       }
-
-      console.log("Session Callback - Updated Session:", session);
       return session;
     },
   },

@@ -12,34 +12,6 @@ import ProfileFavorites from "@/components/profile/ProfileFavorites";
 import ProfileSettings from "@/components/profile/ProfileSettings";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-// Моковые данные для истории ставок
-const biddingHistory = [
-  {
-    id: 1,
-    date: "21 март 2024",
-    time: "14:35",
-    car: "BMW X5 40i 2019",
-    amount: "3 950 000 ₽",
-    status: "Активна",
-  },
-  {
-    id: 2,
-    date: "18 март 2024",
-    time: "09:20",
-    car: "Audi Q7 55 TFSI 2022",
-    amount: "5 100 000 ₽",
-    status: "Перебита",
-  },
-  {
-    id: 3,
-    date: "15 март 2024",
-    time: "16:45",
-    car: "Mercedes-Benz GLE 450 2021",
-    amount: "4 700 000 ₽",
-    status: "Выиграна",
-  },
-];
-
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -118,7 +90,6 @@ export default function ProfilePage() {
 
           <TabsContent value='overview'>
             <ProfileOverview
-              biddingHistory={biddingHistory}
               favoriteAuctions={favoriteAuctions}
               onTabChange={setActiveTab}
               user={session.user}
@@ -126,7 +97,7 @@ export default function ProfilePage() {
           </TabsContent>
 
           <TabsContent value='bids'>
-            <ProfileBids biddingHistory={biddingHistory} />
+            <ProfileBids />
           </TabsContent>
 
           <TabsContent value='favorites'>

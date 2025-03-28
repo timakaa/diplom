@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X, User, LogOut } from "lucide-react";
+import { X, User, LogOut, Wallet } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import {
   ResponsiveModal,
@@ -20,6 +20,14 @@ export default function MobileMenu({ isOpen, onClose }) {
   const prevPathRef = useRef(pathname);
   const { data: session, status } = useSession();
   const loading = status === "loading";
+
+  const formatBalance = (balance) => {
+    return new Intl.NumberFormat("ru-RU", {
+      style: "currency",
+      currency: "RUB",
+      maximumFractionDigits: 0,
+    }).format(balance || 0);
+  };
 
   // Close menu only when path changes after initial render
   useEffect(() => {
@@ -113,6 +121,19 @@ export default function MobileMenu({ isOpen, onClose }) {
                       {session.user.email}
                     </p>
                   </div>
+                </div>
+
+                {/* Баланс пользователя */}
+                <div className='flex items-center justify-between p-2 border rounded-md mb-2'>
+                  <div className='flex items-center gap-2'>
+                    <Wallet className='h-5 w-5 text-muted-foreground' />
+                    <span className='text-sm text-muted-foreground'>
+                      Баланс:
+                    </span>
+                  </div>
+                  <span className='font-medium'>
+                    {formatBalance(session.user.balance)}
+                  </span>
                 </div>
 
                 {/* Личный кабинет и другие опции */}
