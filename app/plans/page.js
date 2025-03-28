@@ -1,7 +1,6 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import Layout from "@/components/layout/Layout";
-import PlanCard from "@/components/plans/PlanCard";
 import { SUBSCRIPTION_PLANS } from "@/lib/config/plans";
 import { PlansClient } from "./PlansClient";
 

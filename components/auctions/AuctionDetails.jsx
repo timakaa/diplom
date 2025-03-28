@@ -1,14 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
-import { Clock, Users, Calendar, MapPin, Gauge, Heart } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useFavorites } from "@/lib/hooks/useFavorites";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import AuctionImage from "./AuctionImage";
+import AuctionHeader from "./AuctionHeader";
+import AuctionSpecs from "./AuctionSpecs";
+import AuctionDescription from "./AuctionDescription";
+import AuctionBidPanel from "./AuctionBidPanel";
 
 const fetchAuction = async (id) => {
   const response = await fetch(`/api/auctions/${id}`);
@@ -18,7 +21,7 @@ const fetchAuction = async (id) => {
   return response.json();
 };
 
-const getTimeLeft = (endDate) => {
+export const getTimeLeft = (endDate) => {
   const now = new Date();
   const end = new Date(endDate);
   const diff = end - now;
@@ -41,11 +44,12 @@ const getTimeLeft = (endDate) => {
 };
 
 export default function AuctionDetails({ id }) {
-  const [bidAmount, setBidAmount] = useState("");
   const [timeLeft, setTimeLeft] = useState("");
   const { toast } = useToast();
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const { addToFavorites, removeFromFavorites } = useFavorites();
+  const queryClient = useQueryClient();
+  const router = useRouter();
 
   const {
     data: auction,
@@ -69,14 +73,9 @@ export default function AuctionDetails({ id }) {
     refetchOnMount: true,
   });
 
-  console.log("Favorites data:", favorites); // Добавляем для отладки
-  console.log("Current auction id:", id); // Добавляем для отладки
-
   const isFavorite = favorites?.favorites?.some(
     (fav) => fav.auction.id === parseInt(id),
   );
-
-  console.log("Is favorite:", isFavorite); // Добавляем для отладки
 
   const handleFavoriteClick = () => {
     if (!session?.user) {
@@ -109,40 +108,128 @@ export default function AuctionDetails({ id }) {
     }
   }, [auction?.endDate]);
 
-  const handleBidSubmit = (e) => {
-    e.preventDefault();
-    const amount = Number(bidAmount);
-
-    if (!amount || isNaN(amount)) {
+  const handleBidSubmit = async (amount, isConfirmed = false) => {
+    // Проверка авторизации
+    if (!session?.user) {
       toast({
-        title: "Ошибка",
-        description: "Введите корректную сумму ставки",
+        title: "Необходима авторизация",
+        description: "Войдите, чтобы сделать ставку",
         variant: "destructive",
       });
-      return;
+      router.push("/auth/signin");
+      return false;
     }
 
-    if (amount <= auction.currentPrice) {
+    // Валидация без отправки на сервер (для первого шага - проверки перед модальным окном)
+    if (!isConfirmed) {
+      if (!amount || isNaN(amount) || amount <= 0) {
+        toast({
+          title: "Ошибка",
+          description: "Введите корректную сумму ставки",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      if (amount <= auction.currentPrice) {
+        toast({
+          title: "Ошибка",
+          description: "Ставка должна быть больше текущей цены",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Проверка минимального шага ставки
+      const minBid = Math.floor(parseInt(auction.currentPrice) + 1000);
+      if (amount < minBid) {
+        toast({
+          title: "Ошибка",
+          description: `Минимальный шаг ставки составляет 1 000 ₽. Минимальная ставка: ${new Intl.NumberFormat(
+            "ru-RU",
+            {
+              maximumFractionDigits: 0,
+              minimumFractionDigits: 0,
+            },
+          ).format(minBid)} ₽`,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Валидация пройдена
+      return true;
+    }
+
+    // Если подтверждено, отправляем на сервер
+    try {
+      const response = await fetch("/api/bids", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          auctionId: parseInt(id),
+          amount: Math.floor(parseInt(amount)), // Округляем до целого числа
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Ошибка при создании ставки");
+      }
+
+      const data = await response.json();
+
+      // Обновляем данные аукциона в кэше
+      queryClient.invalidateQueries({ queryKey: ["auction", id] });
+      // Также обновляем данные о ставках пользователя
+      queryClient.invalidateQueries({ queryKey: ["bids"] });
+      // Обновляем данные о ставке пользователя для этого аукциона
+      queryClient.invalidateQueries({
+        queryKey: ["userBid", parseInt(id), session?.user?.id],
+      });
+
+      // Обновляем баланс пользователя в сессии
+      if (session?.user) {
+        const currentBalance = parseInt(session.user.balance || 0);
+        const newBalance = currentBalance - Math.floor(parseInt(amount));
+
+        // Обновляем сессию с новым балансом
+        await updateSession({
+          user: {
+            ...session.user,
+            balance: newBalance,
+          },
+        });
+      }
+
+      toast({
+        title: "Успешно",
+        description: "Ваша ставка принята",
+      });
+
+      return true;
+    } catch (error) {
       toast({
         title: "Ошибка",
-        description: "Ставка должна быть больше текущей цены",
+        description:
+          error.message || "Не удалось сделать ставку. Попробуйте позже.",
         variant: "destructive",
       });
-      return;
+      return false;
     }
-
-    // Здесь будет логика отправки ставки
-    toast({
-      title: "Успешно",
-      description: "Ваша ставка принята",
-    });
-    setBidAmount("");
   };
 
   if (isLoading) {
     return (
       <div className='container px-4 py-8'>
-        <div className='text-center'>Загрузка...</div>
+        <div className='flex flex-col items-center justify-center p-8 space-y-4'>
+          <LoadingSpinner size='xl' />
+          <p className='text-muted-foreground'>
+            Загрузка информации об аукционе...
+          </p>
+        </div>
       </div>
     );
   }
@@ -150,7 +237,14 @@ export default function AuctionDetails({ id }) {
   if (error) {
     return (
       <div className='container px-4 py-8'>
-        <div className='text-center text-red-500'>Ошибка загрузки аукциона</div>
+        <div className='text-center text-red-500 p-8 border border-red-200 rounded-md bg-red-50'>
+          <h3 className='text-xl font-semibold mb-2'>
+            Ошибка загрузки аукциона
+          </h3>
+          <p>
+            {error.message || "Не удалось загрузить данные. Попробуйте позже."}
+          </p>
+        </div>
       </div>
     );
   }
@@ -158,7 +252,12 @@ export default function AuctionDetails({ id }) {
   if (!auction) {
     return (
       <div className='container px-4 py-8'>
-        <div className='text-center'>Аукцион не найден</div>
+        <div className='text-center p-8 border border-gray-200 rounded-md'>
+          <h3 className='text-xl font-semibold mb-2'>Аукцион не найден</h3>
+          <p className='text-muted-foreground'>
+            Запрашиваемый аукцион не существует или был удалён
+          </p>
+        </div>
       </div>
     );
   }
@@ -169,146 +268,32 @@ export default function AuctionDetails({ id }) {
         {/* Основная информация */}
         <div className='lg:col-span-2 space-y-8'>
           {/* Галерея изображений */}
-          <div className='aspect-[16/9] relative rounded-lg overflow-hidden'>
-            <Image
-              src='/placeholder.svg'
-              alt={auction.title}
-              fill
-              className='object-cover'
-            />
-          </div>
+          <AuctionImage title={auction.title} />
 
           {/* Информация об автомобиле */}
           <div className='space-y-6'>
-            <div className='flex justify-between items-start'>
-              <div>
-                <h1 className='text-3xl font-bold'>{auction.title}</h1>
-                <p className='text-muted-foreground mt-2'>
-                  {auction.description}
-                </p>
-              </div>
-              <Button
-                variant={isFavorite ? "default" : "outline"}
-                size='icon'
-                onClick={handleFavoriteClick}
-                disabled={
-                  addToFavorites.isPending ||
-                  removeFromFavorites.isPending ||
-                  isLoadingFavorites
-                }
-                className={`transition-all ${
-                  isFavorite
-                    ? "bg-primary hover:bg-primary/90"
-                    : "hover:text-primary hover:border-primary"
-                }`}
-              >
-                {isLoadingFavorites ? (
-                  <span className='h-5 w-5 animate-pulse'>•</span>
-                ) : (
-                  <Heart
-                    className={`h-5 w-5 transition-all ${
-                      isFavorite
-                        ? "fill-primary-foreground text-primary-foreground"
-                        : "fill-none hover:fill-primary/20"
-                    }`}
-                  />
-                )}
-              </Button>
-            </div>
+            <AuctionHeader
+              auction={auction}
+              isFavorite={isFavorite}
+              isLoadingFavorites={isLoadingFavorites}
+              onFavoriteClick={handleFavoriteClick}
+              addToFavoritesPending={addToFavorites.isPending}
+              removeFromFavoritesPending={removeFromFavorites.isPending}
+            />
 
-            <div className='grid grid-cols-2 sm:grid-cols-4 gap-4'>
-              <div className='flex items-center gap-2'>
-                <Gauge className='h-5 w-5 text-muted-foreground' />
-                <div>
-                  <p className='text-sm text-muted-foreground'>Пробег</p>
-                  <p className='font-medium'>
-                    {auction.mileage?.toLocaleString()} км
-                  </p>
-                </div>
-              </div>
-              <div className='flex items-center gap-2'>
-                <Calendar className='h-5 w-5 text-muted-foreground' />
-                <div>
-                  <p className='text-sm text-muted-foreground'>Год</p>
-                  <p className='font-medium'>{auction.year}</p>
-                </div>
-              </div>
-              <div className='flex items-center gap-2'>
-                <MapPin className='h-5 w-5 text-muted-foreground' />
-                <div>
-                  <p className='text-sm text-muted-foreground'>Локация</p>
-                  <p className='font-medium'>{auction.location}</p>
-                </div>
-              </div>
-              <div className='flex items-center gap-2'>
-                <Users className='h-5 w-5 text-muted-foreground' />
-                <div>
-                  <p className='text-sm text-muted-foreground'>Ставок</p>
-                  <p className='font-medium'>{auction.bids || 0}</p>
-                </div>
-              </div>
-            </div>
+            <AuctionSpecs auction={auction} />
 
             {/* Описание */}
-            <div className='space-y-4'>
-              <h2 className='text-xl font-semibold'>Описание</h2>
-              <p className='text-muted-foreground whitespace-pre-wrap'>
-                {auction.description}
-              </p>
-            </div>
+            <AuctionDescription description={auction.description} />
           </div>
         </div>
 
         {/* Панель ставок */}
-        <div className='lg:col-span-1'>
-          <div className='sticky top-[98px] space-y-6 p-6 border rounded-lg bg-card'>
-            <div className='space-y-2'>
-              <h2 className='text-xl font-semibold'>Текущая цена</h2>
-              <p className='text-3xl font-bold'>
-                {new Intl.NumberFormat("ru-RU", {
-                  style: "currency",
-                  currency: "RUB",
-                }).format(auction.currentPrice)}
-              </p>
-            </div>
-
-            <div className='space-y-2'>
-              <h3 className='text-sm font-medium'>Осталось времени</h3>
-              <div className='flex items-center gap-2 text-muted-foreground'>
-                <Clock className='h-4 w-4' />
-                <span>{timeLeft}</span>
-              </div>
-            </div>
-
-            <form onSubmit={handleBidSubmit} className='space-y-4'>
-              <div className='space-y-2'>
-                <label
-                  htmlFor='bidAmount'
-                  className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
-                >
-                  Ваша ставка
-                </label>
-                <Input
-                  id='bidAmount'
-                  type='number'
-                  placeholder='Введите сумму'
-                  value={bidAmount}
-                  onChange={(e) => setBidAmount(e.target.value)}
-                  min={auction.currentPrice}
-                  step={1000}
-                />
-              </div>
-              <Button type='submit' className='w-full'>
-                Сделать ставку
-              </Button>
-            </form>
-
-            <div className='text-sm text-muted-foreground'>
-              <p>Минимальный шаг ставки: 1 000 ₽</p>
-              <p>Ставка не может быть меньше текущей цены</p>
-            </div>
-          </div>
-        </div>
+        <AuctionBidPanel
+          auction={auction}
+          timeLeft={timeLeft}
+          onBidSubmit={handleBidSubmit}
+        />
       </div>
     </div>
   );

@@ -56,7 +56,10 @@ export async function POST(request) {
     }
 
     // Проверка, что ставка больше текущей цены
-    if (parseFloat(amount) <= parseFloat(auction.currentPrice)) {
+    const currentPrice = Math.floor(parseInt(auction.currentPrice));
+    const bidAmount = Math.floor(parseInt(amount));
+
+    if (bidAmount <= currentPrice) {
       return Response.json(
         { error: "Ставка должна быть больше текущей цены" },
         { status: 400 },
@@ -64,7 +67,7 @@ export async function POST(request) {
     }
 
     // Проверка минимального шага ставки
-    const increment = parseFloat(amount) - parseFloat(auction.currentPrice);
+    const increment = bidAmount - currentPrice;
     if (increment < MIN_BID_INCREMENT) {
       return Response.json(
         {
@@ -79,7 +82,8 @@ export async function POST(request) {
       where: eq(users.id, session.user.id),
     });
 
-    if (!user || parseFloat(user.balance) < parseFloat(amount)) {
+    const userBalance = Math.floor(parseInt(user?.balance || 0));
+    if (!user || userBalance < bidAmount) {
       return Response.json(
         { error: "Недостаточно средств на балансе" },
         { status: 400 },
@@ -108,7 +112,7 @@ export async function POST(request) {
         .values({
           userId: session.user.id,
           auctionId: auctionId,
-          amount: amount,
+          amount: bidAmount,
           status: bidStatusEnum.ACTIVE,
         })
         .returning();
@@ -117,10 +121,19 @@ export async function POST(request) {
       await tx
         .update(auctions)
         .set({
-          currentPrice: amount,
+          currentPrice: bidAmount,
           updatedAt: new Date(),
         })
         .where(eq(auctions.id, auctionId));
+
+      // 4. Уменьшаем баланс пользователя на сумму ставки
+      await tx
+        .update(users)
+        .set({
+          balance: userBalance - bidAmount,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, session.user.id));
 
       return newBid;
     });

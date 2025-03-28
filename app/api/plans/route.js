@@ -60,21 +60,14 @@ export async function POST(request) {
       );
     }
 
-    // Проверяем, достаточно ли средств
     const newPlan = SUBSCRIPTION_PLANS[newPlanIndex];
-    if (user.balance < newPlan.price) {
-      return Response.json(
-        { message: "Недостаточно средств для активации плана" },
-        { status: 400 },
-      );
-    }
 
     // Обновляем план и списываем средства
     await db
       .update(users)
       .set({
         plan: plan,
-        balance: user.balance - newPlan.price,
+        balance: newPlan.balance,
       })
       .where(eq(users.id, user.id));
 

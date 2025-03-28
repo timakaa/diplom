@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import PlanCard from "@/components/plans/PlanCard";
 import { PlanConfirmationDialog } from "@/components/plans/PlanConfirmationDialog";
+import { useSession } from "next-auth/react";
 
 export function PlansClient({ plans, currentPlan }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const { data: session, update } = useSession();
 
   // Получаем индекс текущего плана
   const currentPlanIndex = plans.findIndex((plan) => plan.id === currentPlan);
@@ -45,6 +47,15 @@ export function PlansClient({ plans, currentPlan }) {
       if (!response.ok) {
         throw new Error(data.message || "Ошибка при обновлении плана");
       }
+
+      await update({
+        ...session,
+        user: {
+          ...session.user,
+          plan: selectedPlan.id,
+          balance: selectedPlan.balance,
+        },
+      });
 
       toast({
         title: "Успешно",
