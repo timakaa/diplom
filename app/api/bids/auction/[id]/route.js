@@ -14,7 +14,7 @@ export async function GET(request, { params }) {
     // Parse pagination parameters
     const page = parseInt(searchParams.get("page") || "1");
     const pageSize = parseInt(searchParams.get("pageSize") || "10");
-    const status = searchParams.get("status");
+    const status = searchParams.get("status")?.toUpperCase();
 
     // Calculate offset for pagination
     const offset = (page - 1) * pageSize;

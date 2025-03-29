@@ -2,8 +2,8 @@ import "dotenv/config";
 import cron from "node-cron";
 import { generateRandomAuctions } from "../lib/utils/auction-generator.js";
 
-// Schedule: every 30 seconds
-const schedule = "5 * * * * *";
+// Schedule: every 5 minutes
+const schedule = "*/1 * * * *";
 
 console.log("Starting cron worker...");
 

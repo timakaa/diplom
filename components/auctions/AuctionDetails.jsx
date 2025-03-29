@@ -291,17 +291,152 @@ export default function AuctionDetails({ id }) {
             {/* Описание */}
             <AuctionDescription description={auction.description} />
 
-            {/* История ставок */}
+            {/* История ставок - отображаем для всех аукционов */}
             <AuctionBidsHistory auctionId={parseInt(id)} />
           </div>
         </div>
 
-        {/* Панель ставок */}
-        <AuctionBidPanel
-          auction={auction}
-          timeLeft={timeLeft}
-          onBidSubmit={handleBidSubmit}
-        />
+        {/* Панель ставок или панель архивированного аукциона */}
+        {auction.status === "archived" ||
+        new Date(auction.endDate) < new Date() ? (
+          <ArchivedAuctionPanel auction={auction} />
+        ) : (
+          <AuctionBidPanel
+            auction={auction}
+            timeLeft={timeLeft}
+            onBidSubmit={handleBidSubmit}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Компонент для архивированных аукционов
+function ArchivedAuctionPanel({ auction }) {
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat("ru-RU", {
+      style: "currency",
+      currency: "RUB",
+    }).format(price);
+  };
+
+  // Получаем информацию о выигравшей ставке
+  const {
+    data: bids,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["auctionWinningBid", parseInt(auction.id)],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/bids/auction/${auction.id}?status=won`,
+      );
+      if (!response.ok) throw new Error("Ошибка загрузки выигравшей ставки");
+      return response.json();
+    },
+  });
+
+  // Находим выигравшую ставку (если есть) и проверяем, что она действительно существует
+  const winningBid = bids?.bids?.length > 0 ? bids.bids[0] : null;
+
+  return (
+    <div className='lg:col-span-1'>
+      <div className='sticky top-[98px] space-y-6 p-6 border rounded-lg bg-card'>
+        <div className='space-y-2'>
+          <h2 className='text-xl font-semibold'>Аукцион завершен</h2>
+          <div className='flex items-center gap-2'>
+            <span className='inline-flex h-2 w-2 rounded-full bg-yellow-500'></span>
+            <span className='text-muted-foreground'>Архивирован</span>
+          </div>
+        </div>
+
+        <div className='space-y-2 border-t pt-4'>
+          <h3 className='text-sm font-medium'>Финальная цена</h3>
+          <p className='text-3xl font-bold'>
+            {formatPrice(Math.floor(parseInt(auction.currentPrice)))}
+          </p>
+        </div>
+
+        {isLoading ? (
+          <div className='flex justify-center py-4'>
+            <LoadingSpinner size='lg' />
+          </div>
+        ) : error ? (
+          <div className='border-t pt-4'>
+            <div className='bg-red-900 text-red-100 p-4 rounded-md border border-red-800'>
+              <h3 className='font-semibold'>Ошибка загрузки ставок</h3>
+              <p className='mt-2 text-sm'>{error.message}</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {winningBid ? (
+              <div className='border-t pt-4'>
+                <div className='bg-green-900 text-green-100 p-4 rounded-md border border-green-800'>
+                  <h3 className='font-semibold flex items-center gap-2'>
+                    <div className='rounded-full bg-green-800 p-1'>
+                      <svg
+                        xmlns='http://www.w3.org/2000/svg'
+                        viewBox='0 0 24 24'
+                        fill='none'
+                        stroke='currentColor'
+                        strokeWidth='2'
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        className='h-4 w-4'
+                      >
+                        <path d='M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z' />
+                        <path d='m9 12 2 2 4-4' />
+                      </svg>
+                    </div>
+                    Победитель определен
+                  </h3>
+                  <p className='mt-2 text-sm'>
+                    Выигрышная ставка: {formatPrice(winningBid.amount)}
+                  </p>
+                  <p className='text-sm mt-1'>
+                    Дата окончания:{" "}
+                    {new Date(auction.endDate).toLocaleDateString("ru-RU")}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className='border-t pt-4'>
+                <div className='bg-gray-800 text-gray-100 p-4 rounded-md border border-gray-700'>
+                  <h3 className='font-semibold flex items-center gap-2'>
+                    <div className='rounded-full bg-gray-700 p-1'>
+                      <svg
+                        xmlns='http://www.w3.org/2000/svg'
+                        viewBox='0 0 24 24'
+                        fill='none'
+                        stroke='currentColor'
+                        strokeWidth='2'
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        className='h-4 w-4'
+                      >
+                        <path d='M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z' />
+                        <line x1='12' y1='8' x2='12' y2='12' />
+                        <line x1='12' y1='16' x2='12.01' y2='16' />
+                      </svg>
+                    </div>
+                    Нет победителя
+                  </h3>
+                  <p className='mt-2 text-sm'>Аукцион завершен без ставок</p>
+                  <p className='text-sm mt-1'>
+                    Дата окончания:{" "}
+                    {new Date(auction.endDate).toLocaleDateString("ru-RU")}
+                  </p>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        <div className='border-t pt-4 text-sm text-muted-foreground'>
+          <p>Этот аукцион завершен и перемещен в архив.</p>
+        </div>
       </div>
     </div>
   );
