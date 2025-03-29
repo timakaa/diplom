@@ -6,20 +6,76 @@ import AuctionPagination from "@/components/auctions/AuctionPagination";
 import AuctionSearch from "@/components/auctions/AuctionSearch";
 import AuctionResults from "@/components/auctions/AuctionResults";
 import { useAuctions } from "@/lib/hooks/useAuctions";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function AuctionsContent() {
-  const [page, setPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState(null);
-  const [priceRange, setPriceRange] = useState({ min: "", max: "" });
-  const [yearRange, setYearRange] = useState({ min: "", max: "" });
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
+  // Инициализируем состояния на основе URL параметров
+  const initialPage = parseInt(searchParams.get("page") || "1");
+  const initialStatus = searchParams.get("status") || null;
+  const initialPriceMin = searchParams.get("priceMin") || "";
+  const initialPriceMax = searchParams.get("priceMax") || "";
+  const initialYearMin = searchParams.get("yearMin") || "";
+  const initialYearMax = searchParams.get("yearMax") || "";
+
+  const [page, setPage] = useState(initialPage);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState(initialStatus);
+  const [priceRange, setPriceRange] = useState({
+    min: initialPriceMin,
+    max: initialPriceMax,
+  });
+  const [yearRange, setYearRange] = useState({
+    min: initialYearMin,
+    max: initialYearMax,
+  });
+
+  // Вызов API с обновленными фильтрами
   const { data, isLoading, error } = useAuctions({
     page,
     limit: 9,
     status: selectedStatus,
+    priceMin: priceRange.min,
+    priceMax: priceRange.max,
+    yearMin: yearRange.min,
+    yearMax: yearRange.max,
   });
+
+  // Обновляем URL при изменении фильтров
+  useEffect(() => {
+    const params = new URLSearchParams();
+
+    // Добавляем параметры в URL только если они имеют значение
+    if (page > 1) params.set("page", page.toString());
+    if (selectedStatus) params.set("status", selectedStatus);
+    if (priceRange.min) params.set("priceMin", priceRange.min);
+    if (priceRange.max) params.set("priceMax", priceRange.max);
+    if (yearRange.min) params.set("yearMin", yearRange.min);
+    if (yearRange.max) params.set("yearMax", yearRange.max);
+
+    // Формируем новый URL
+    const newUrl = params.toString()
+      ? `?${params.toString()}`
+      : window.location.pathname;
+
+    // Обновляем URL без перезагрузки страницы
+    router.push(newUrl, { scroll: false });
+  }, [page, selectedStatus, priceRange, yearRange, router]);
+
+  // Эффект для проверки, есть ли результаты на текущей странице
+  useEffect(() => {
+    // Если нет данных или они загружаются - не делаем ничего
+    if (isLoading || !data) return;
+
+    // Если на текущей странице нет аукционов, но они есть на других страницах
+    if (data.auctions.length === 0 && data.pagination.total > 0 && page > 1) {
+      // Возвращаемся на первую страницу
+      setPage(1);
+    }
+  }, [data, isLoading, page, setPage]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -30,8 +86,16 @@ export default function AuctionsContent() {
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     if (name === "status") {
-      setSelectedStatus(value);
-      setPage(1);
+      // Если значение пустое, устанавливаем null (все аукционы)
+      if (value === "") {
+        setSelectedStatus(null);
+      } else {
+        // Если выбирается уже активный статус, тоже сбрасываем его на null
+        setSelectedStatus((prevStatus) =>
+          prevStatus === value ? null : value,
+        );
+      }
+      setPage(1); // Возвращаемся на первую страницу при смене фильтра
     } else if (name.startsWith("price")) {
       setPriceRange((prev) => ({
         ...prev,
@@ -92,14 +156,15 @@ export default function AuctionsContent() {
             <div className='space-y-6'>
               <AuctionResults data={data} isLoading={isLoading} error={error} />
 
-              {/* Пагинация */}
-              {data?.pagination.totalPages > 1 && (
-                <AuctionPagination
-                  currentPage={page}
-                  totalPages={data.pagination.totalPages}
-                  onPageChange={setPage}
-                />
-              )}
+              {/* Пагинация - показываем только если есть результаты и более одной страницы */}
+              {data?.auctions?.length > 0 &&
+                data?.pagination.totalPages > 1 && (
+                  <AuctionPagination
+                    currentPage={page}
+                    totalPages={data.pagination.totalPages}
+                    onPageChange={setPage}
+                  />
+                )}
             </div>
           </div>
         </div>

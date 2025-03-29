@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db/index.js";
 import { auctions, bids } from "@/lib/db/schema.js";
 import { desc } from "drizzle-orm";
-import { eq, sql, count, inArray } from "drizzle-orm";
+import { eq, sql, count, inArray, and, gte, lte } from "drizzle-orm";
 
 export async function GET(request) {
   try {
@@ -12,25 +12,61 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get("limit") || "10");
     const status = searchParams.get("status");
 
+    // Получаем параметры фильтров цены и года
+    const priceMin = searchParams.get("priceMin");
+    const priceMax = searchParams.get("priceMax");
+    const yearMin = searchParams.get("yearMin");
+    const yearMax = searchParams.get("yearMax");
+
     // Calculate offset
     const offset = (page - 1) * limit;
 
     // Build query
     let query = db.select().from(auctions);
+    let conditions = [];
 
     // Add status filter if provided
     if (status) {
-      query = query.where(eq(auctions.status, status));
+      conditions.push(eq(auctions.status, status));
+    }
+
+    // Добавляем фильтры по цене
+    if (priceMin && !isNaN(parseFloat(priceMin))) {
+      conditions.push(gte(auctions.currentPrice, parseFloat(priceMin)));
+    }
+
+    if (priceMax && !isNaN(parseFloat(priceMax))) {
+      conditions.push(lte(auctions.currentPrice, parseFloat(priceMax)));
+    }
+
+    // Добавляем фильтры по году
+    if (yearMin && !isNaN(parseInt(yearMin))) {
+      conditions.push(gte(auctions.year, parseInt(yearMin)));
+    }
+
+    if (yearMax && !isNaN(parseInt(yearMax))) {
+      conditions.push(lte(auctions.year, parseInt(yearMax)));
+    }
+
+    // Применяем все условия фильтрации
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
     }
 
     // Add sorting and pagination
     query = query.orderBy(desc(auctions.createdAt)).limit(limit).offset(offset);
 
     // Get total count for pagination
-    const totalCount = await db
-      .select({ count: sql`count(*)` })
-      .from(auctions)
-      .then((result) => Number(result[0].count));
+    let totalCountQuery = db.select({ count: sql`count(*)` }).from(auctions);
+
+    // Применяем те же фильтры для подсчета общего количества
+    if (conditions.length > 0) {
+      totalCountQuery = totalCountQuery.where(and(...conditions));
+    }
+
+    const totalCount = await totalCountQuery.then((result) =>
+      Number(result[0].count),
+    );
 
     // Execute query
     const results = await query;
