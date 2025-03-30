@@ -20,9 +20,12 @@ export default function AuctionsContent() {
   const initialPriceMax = searchParams.get("priceMax") || "";
   const initialYearMin = searchParams.get("yearMin") || "";
   const initialYearMax = searchParams.get("yearMax") || "";
+  const initialSearchQuery = searchParams.get("q") || "";
 
   const [page, setPage] = useState(initialPage);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [inputSearchQuery, setInputSearchQuery] = useState(initialSearchQuery);
+  const [appliedSearchQuery, setAppliedSearchQuery] =
+    useState(initialSearchQuery);
   const [selectedStatus, setSelectedStatus] = useState(initialStatus);
   const [priceRange, setPriceRange] = useState({
     min: initialPriceMin,
@@ -42,6 +45,7 @@ export default function AuctionsContent() {
     priceMax: priceRange.max,
     yearMin: yearRange.min,
     yearMax: yearRange.max,
+    searchQuery: appliedSearchQuery,
   });
 
   // Обновляем URL при изменении фильтров
@@ -55,6 +59,7 @@ export default function AuctionsContent() {
     if (priceRange.max) params.set("priceMax", priceRange.max);
     if (yearRange.min) params.set("yearMin", yearRange.min);
     if (yearRange.max) params.set("yearMax", yearRange.max);
+    if (appliedSearchQuery) params.set("q", appliedSearchQuery);
 
     // Формируем новый URL
     const newUrl = params.toString()
@@ -63,7 +68,7 @@ export default function AuctionsContent() {
 
     // Обновляем URL без перезагрузки страницы
     router.push(newUrl, { scroll: false });
-  }, [page, selectedStatus, priceRange, yearRange, router]);
+  }, [page, selectedStatus, priceRange, yearRange, appliedSearchQuery, router]);
 
   // Эффект для проверки, есть ли результаты на текущей странице
   useEffect(() => {
@@ -79,8 +84,8 @@ export default function AuctionsContent() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    setPage(1);
-    // Здесь можно добавить логику поиска
+    setAppliedSearchQuery(inputSearchQuery);
+    setPage(1); // Сбрасываем на первую страницу при поиске
   };
 
   const handleFilterChange = (e) => {
@@ -113,6 +118,8 @@ export default function AuctionsContent() {
     setSelectedStatus(null);
     setPriceRange({ min: "", max: "" });
     setYearRange({ min: "", max: "" });
+    setInputSearchQuery("");
+    setAppliedSearchQuery("");
     setPage(1);
   };
 
@@ -131,8 +138,8 @@ export default function AuctionsContent() {
             </p>
 
             <AuctionSearch
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
+              searchQuery={inputSearchQuery}
+              onSearchChange={setInputSearchQuery}
               onSubmit={handleSearch}
             />
           </div>

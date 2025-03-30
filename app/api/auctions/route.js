@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/index.js";
-import { auctions, bids } from "@/lib/db/schema.js";
+import { auctions, bids, auctionStatusEnum } from "@/lib/db/schema.js";
 import { desc } from "drizzle-orm";
-import { eq, sql, count, inArray, and, gte, lte } from "drizzle-orm";
+import { eq, sql, count, inArray, and, gte, lte, or, ilike } from "drizzle-orm";
 
 export async function GET(request) {
   try {
@@ -18,6 +18,9 @@ export async function GET(request) {
     const yearMin = searchParams.get("yearMin");
     const yearMax = searchParams.get("yearMax");
 
+    // Получаем параметр поиска
+    const searchQuery = searchParams.get("q");
+
     // Calculate offset
     const offset = (page - 1) * limit;
 
@@ -25,9 +28,30 @@ export async function GET(request) {
     let query = db.select().from(auctions);
     let conditions = [];
 
-    // Add status filter if provided
+    // Add status filter if provided with date checking
     if (status) {
-      conditions.push(eq(auctions.status, status));
+      const currentDate = new Date();
+
+      if (status === auctionStatusEnum.ACTIVE) {
+        // Для активных аукционов проверяем, что дата окончания в будущем
+        conditions.push(
+          and(eq(auctions.status, status), gte(auctions.endDate, currentDate)),
+        );
+      } else if (status === auctionStatusEnum.ARCHIVED) {
+        // Для архивных аукционов показываем все архивные + активные с истекшей датой
+        conditions.push(
+          or(
+            eq(auctions.status, auctionStatusEnum.ARCHIVED),
+            and(
+              eq(auctions.status, auctionStatusEnum.ACTIVE),
+              lte(auctions.endDate, currentDate),
+            ),
+          ),
+        );
+      } else {
+        // Для неизвестных статусов используем стандартную проверку
+        conditions.push(eq(auctions.status, status));
+      }
     }
 
     // Добавляем фильтры по цене
@@ -46,6 +70,19 @@ export async function GET(request) {
 
     if (yearMax && !isNaN(parseInt(yearMax))) {
       conditions.push(lte(auctions.year, parseInt(yearMax)));
+    }
+
+    // Добавляем поиск, если указан поисковый запрос
+    if (searchQuery && searchQuery.trim() !== "") {
+      const searchTerm = `%${searchQuery.trim()}%`;
+      conditions.push(
+        or(
+          ilike(auctions.title, searchTerm),
+          ilike(auctions.description, searchTerm),
+          ilike(auctions.brand, searchTerm),
+          ilike(auctions.model, searchTerm),
+        ),
+      );
     }
 
     // Применяем все условия фильтрации
