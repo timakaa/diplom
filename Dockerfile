@@ -14,15 +14,8 @@ RUN pnpm install
 # Copy source code
 COPY . .
 
-# Copy and make startup script executable
-COPY start.sh /app/start.sh
-RUN chmod +x /app/start.sh
-
 # Expose port
 EXPOSE 3000
 
-# Use the startup script as entrypoint
-ENTRYPOINT ["/app/start.sh"]
-
-# Default command (can be overridden in docker-compose)
+# Default command
 CMD ["pnpm", "dev:cron"] 

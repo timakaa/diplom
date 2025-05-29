@@ -17,12 +17,32 @@ services:
       timeout: 5s
       retries: 5
 
+  db-migrate:
+    build: .
+    container_name: diplom-db-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://timakaaliebe:test@postgres:5432/diplom
+    volumes:
+      - .:/app
+      - /app/node_modules
+    working_dir: /app
+    command: pnpm db:push
+    restart: "no"
+
   app:
     build: .
     container_name: diplom-app
     depends_on:
       postgres:
         condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
     ports:
       - "3000:3000"
     env_file:
