@@ -1,81 +1,66 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { auth } from "@/auth";
 import { db } from "@/lib/db/index.js";
 import { auctions, bids, auctionStatusEnum } from "@/lib/db/schema.js";
-import { desc } from "drizzle-orm";
-import { eq, sql, count, inArray, and, gte, lte, or, ilike } from "drizzle-orm";
+import {
+  eq,
+  and,
+  desc,
+  count,
+  inArray,
+  gte,
+  lte,
+  ilike,
+  or,
+} from "drizzle-orm";
 
+// GET /api/auctions - get all auctions with filtering and pagination
 export async function GET(request) {
   try {
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const limit = parseInt(searchParams.get("limit") || "9");
     const status = searchParams.get("status");
-
-    // Получаем параметры фильтров цены и года
     const priceMin = searchParams.get("priceMin");
     const priceMax = searchParams.get("priceMax");
     const yearMin = searchParams.get("yearMin");
     const yearMax = searchParams.get("yearMax");
-
-    // Получаем параметр поиска
     const searchQuery = searchParams.get("q");
 
     // Calculate offset
     const offset = (page - 1) * limit;
 
-    // Build query
+    // Build base query
     let query = db.select().from(auctions);
-    let conditions = [];
+    let countQuery = db.select({ count: count() }).from(auctions);
 
-    // Add status filter if provided with date checking
-    if (status) {
-      const currentDate = new Date();
+    // Build where conditions
+    const conditions = [];
 
-      if (status === auctionStatusEnum.ACTIVE) {
-        // Для активных аукционов проверяем, что дата окончания в будущем
-        conditions.push(
-          and(eq(auctions.status, status), gte(auctions.endDate, currentDate)),
-        );
-      } else if (status === auctionStatusEnum.ARCHIVED) {
-        // Для архивных аукционов показываем все архивные + активные с истекшей датой
-        conditions.push(
-          or(
-            eq(auctions.status, auctionStatusEnum.ARCHIVED),
-            and(
-              eq(auctions.status, auctionStatusEnum.ACTIVE),
-              lte(auctions.endDate, currentDate),
-            ),
-          ),
-        );
-      } else {
-        // Для неизвестных статусов используем стандартную проверку
-        conditions.push(eq(auctions.status, status));
-      }
+    // Status filter
+    if (status && Object.values(auctionStatusEnum).includes(status)) {
+      conditions.push(eq(auctions.status, status));
     }
 
-    // Добавляем фильтры по цене
+    // Price range filter
     if (priceMin && !isNaN(parseFloat(priceMin))) {
-      conditions.push(gte(auctions.currentPrice, parseFloat(priceMin)));
+      conditions.push(gte(auctions.currentPrice, priceMin));
     }
-
     if (priceMax && !isNaN(parseFloat(priceMax))) {
-      conditions.push(lte(auctions.currentPrice, parseFloat(priceMax)));
+      conditions.push(lte(auctions.currentPrice, priceMax));
     }
 
-    // Добавляем фильтры по году
+    // Year range filter
     if (yearMin && !isNaN(parseInt(yearMin))) {
       conditions.push(gte(auctions.year, parseInt(yearMin)));
     }
-
     if (yearMax && !isNaN(parseInt(yearMax))) {
       conditions.push(lte(auctions.year, parseInt(yearMax)));
     }
 
-    // Добавляем поиск, если указан поисковый запрос
-    if (searchQuery && searchQuery.trim() !== "") {
+    // Search query filter
+    if (searchQuery && searchQuery.trim()) {
       const searchTerm = `%${searchQuery.trim()}%`;
       conditions.push(
         or(
@@ -87,33 +72,23 @@ export async function GET(request) {
       );
     }
 
-    // Применяем все условия фильтрации
+    // Apply conditions if any
     if (conditions.length > 0) {
       query = query.where(and(...conditions));
+      countQuery = countQuery.where(and(...conditions));
     }
 
     // Add sorting and pagination
     query = query.orderBy(desc(auctions.createdAt)).limit(limit).offset(offset);
 
-    // Get total count for pagination
-    let totalCountQuery = db.select({ count: sql`count(*)` }).from(auctions);
+    // Execute queries
+    const [results, totalCountResult] = await Promise.all([query, countQuery]);
 
-    // Применяем те же фильтры для подсчета общего количества
-    if (conditions.length > 0) {
-      totalCountQuery = totalCountQuery.where(and(...conditions));
-    }
-
-    const totalCount = await totalCountQuery.then((result) =>
-      Number(result[0].count),
-    );
-
-    // Execute query
-    const results = await query;
+    const totalCount = totalCountResult[0].count;
 
     // Get bid counts for all fetched auctions
     const auctionIds = results.map((auction) => auction.id);
 
-    // If we have auctions, get their bid counts
     let bidCountsMap = {};
     if (auctionIds.length > 0) {
       const bidCounts = await db
@@ -125,7 +100,6 @@ export async function GET(request) {
         .where(inArray(bids.auctionId, auctionIds))
         .groupBy(bids.auctionId);
 
-      // Create a map of auction ID to bid count
       bidCountsMap = bidCounts.reduce((map, item) => {
         map[item.auctionId] = item.bidCount;
         return map;
@@ -156,10 +130,9 @@ export async function GET(request) {
   }
 }
 
-// POST /api/auctions - create a new auction
+// POST /api/auctions - create new auction
 export async function POST(request) {
-  // Check authentication
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session) {
     return NextResponse.json(
       { error: "Authentication required" },
@@ -182,29 +155,19 @@ export async function POST(request) {
       imageUrl,
     } = body;
 
-    // Validate required fields
-    if (
-      !title ||
-      !description ||
-      !startingPrice ||
-      !startDate ||
-      !endDate ||
-      !brand ||
-      !model ||
-      !year ||
-      !mileage
-    ) {
+    // Validation
+    if (!title?.trim()) {
+      return NextResponse.json({ error: "Title is required" }, { status: 400 });
+    }
+
+    if (!description?.trim()) {
       return NextResponse.json(
-        { error: "All required fields must be provided" },
+        { error: "Description is required" },
         { status: 400 },
       );
     }
 
-    // Validate data types and ranges
     const parsedStartingPrice = parseFloat(startingPrice);
-    const parsedYear = parseInt(year);
-    const parsedMileage = parseInt(mileage);
-
     if (isNaN(parsedStartingPrice) || parsedStartingPrice <= 0) {
       return NextResponse.json(
         { error: "Starting price must be a positive number" },
@@ -212,6 +175,15 @@ export async function POST(request) {
       );
     }
 
+    if (!brand?.trim()) {
+      return NextResponse.json({ error: "Brand is required" }, { status: 400 });
+    }
+
+    if (!model?.trim()) {
+      return NextResponse.json({ error: "Model is required" }, { status: 400 });
+    }
+
+    const parsedYear = parseInt(year);
     if (
       isNaN(parsedYear) ||
       parsedYear < 1900 ||
@@ -223,6 +195,7 @@ export async function POST(request) {
       );
     }
 
+    const parsedMileage = parseInt(mileage);
     if (isNaN(parsedMileage) || parsedMileage < 0) {
       return NextResponse.json(
         { error: "Mileage must be a non-negative number" },
@@ -230,10 +203,9 @@ export async function POST(request) {
       );
     }
 
-    // Validate dates
+    // Date validation
     const startDateObj = new Date(startDate);
     const endDateObj = new Date(endDate);
-    const now = new Date();
 
     if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
       return NextResponse.json(
@@ -242,7 +214,7 @@ export async function POST(request) {
       );
     }
 
-    if (startDateObj < now) {
+    if (startDateObj < new Date()) {
       return NextResponse.json(
         { error: "Start date cannot be in the past" },
         { status: 400 },
@@ -256,11 +228,10 @@ export async function POST(request) {
       );
     }
 
-    // Create the auction
+    // Create auction
     const [newAuction] = await db
       .insert(auctions)
       .values({
-        userId: session.user.id,
         title: title.trim(),
         description: description.trim(),
         startingPrice: parsedStartingPrice,
@@ -272,17 +243,17 @@ export async function POST(request) {
         year: parsedYear,
         mileage: parsedMileage,
         imageUrl: imageUrl?.trim() || null,
-        status: auctionStatusEnum.ACTIVE,
+        userId: session.user.id,
+        status: "draft",
+        createdAt: new Date(),
+        updatedAt: new Date(),
       })
       .returning();
 
-    return NextResponse.json(
-      {
-        message: "Auction created successfully",
-        auction: newAuction,
-      },
-      { status: 201 },
-    );
+    return NextResponse.json({
+      message: "Auction created successfully",
+      auction: newAuction,
+    });
   } catch (error) {
     console.error("Error creating auction:", error);
     return NextResponse.json(

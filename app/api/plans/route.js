@@ -1,32 +1,47 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { auth } from "@/auth";
+import { db } from "@/lib/db/index.js";
+import { users } from "@/lib/db/schema.js";
 import { eq } from "drizzle-orm";
-import { SUBSCRIPTION_PLANS } from "@/lib/config/plans";
 
-// GET /api/plans - получить список планов
+// GET /api/plans - get user's current plan
 export async function GET() {
-  const session = await getServerSession(authOptions);
-
+  const session = await auth();
   if (!session) {
-    return Response.json(
-      { message: "Необходима авторизация" },
+    return NextResponse.json(
+      { error: "Authentication required" },
       { status: 401 },
     );
   }
 
-  return Response.json({ plans: SUBSCRIPTION_PLANS });
+  try {
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      plan: user.plan || "free",
+      balance: user.balance || 0,
+    });
+  } catch (error) {
+    console.error("Error fetching user plan:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch user plan" },
+      { status: 500 },
+    );
+  }
 }
 
-// POST /api/plans - обновить план пользователя
+// POST /api/plans - update user's plan
 export async function POST(request) {
-  const session = await getServerSession(authOptions);
-
+  const session = await auth();
   if (!session) {
-    return Response.json(
-      { message: "Необходима авторизация" },
+    return NextResponse.json(
+      { error: "Authentication required" },
       { status: 401 },
     );
   }
@@ -34,48 +49,35 @@ export async function POST(request) {
   try {
     const { plan } = await request.json();
 
-    // Получаем текущего пользователя
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, session.user.id),
-    });
-
-    if (!user) {
-      return Response.json(
-        { message: "Пользователь не найден" },
-        { status: 404 },
-      );
+    if (!plan) {
+      return NextResponse.json({ error: "Plan is required" }, { status: 400 });
     }
 
-    // Находим индексы текущего и нового плана
-    const currentPlanIndex = SUBSCRIPTION_PLANS.findIndex(
-      (p) => p.id === user.plan,
-    );
-    const newPlanIndex = SUBSCRIPTION_PLANS.findIndex((p) => p.id === plan);
-
-    // Проверяем, не является ли новый план ниже текущего
-    if (newPlanIndex < currentPlanIndex) {
-      return Response.json(
-        { message: "Нельзя выбрать план ниже текущего уровня подписки" },
-        { status: 400 },
-      );
+    // Validate plan
+    const validPlans = ["free", "basic", "premium"];
+    if (!validPlans.includes(plan)) {
+      return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }
 
-    const newPlan = SUBSCRIPTION_PLANS[newPlanIndex];
-
-    // Обновляем план и списываем средства
-    await db
+    // Update user plan
+    const [updatedUser] = await db
       .update(users)
       .set({
-        plan: plan,
-        balance: newPlan.balance,
+        plan,
+        updatedAt: new Date(),
       })
-      .where(eq(users.id, user.id));
+      .where(eq(users.id, session.user.id))
+      .returning();
 
-    return Response.json({ message: "План успешно обновлен" });
+    return NextResponse.json({
+      message: "Plan updated successfully",
+      plan: updatedUser.plan,
+      balance: updatedUser.balance,
+    });
   } catch (error) {
-    console.error("Error updating plan:", error);
-    return Response.json(
-      { message: "Ошибка при обновлении плана" },
+    console.error("Error updating user plan:", error);
+    return NextResponse.json(
+      { error: "Failed to update user plan" },
       { status: 500 },
     );
   }

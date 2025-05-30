@@ -1,5 +1,6 @@
-import { db } from "@/lib/db";
-import { bids, bidStatusEnum } from "@/lib/db/schema";
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db/index.js";
+import { bids, bidStatusEnum } from "@/lib/db/schema.js";
 import { eq, and, desc, count } from "drizzle-orm";
 
 /**
@@ -45,7 +46,7 @@ export async function GET(request, { params }) {
     const totalCount = totalCountResult[0].value;
 
     // Return bids with pagination info
-    return Response.json({
+    return NextResponse.json({
       bids: auctionBids,
       pagination: {
         total: totalCount,
@@ -56,7 +57,7 @@ export async function GET(request, { params }) {
     });
   } catch (error) {
     console.error("Error fetching bids for auction:", error);
-    return Response.json(
+    return NextResponse.json(
       { error: "Произошла ошибка при получении ставок" },
       { status: 500 },
     );

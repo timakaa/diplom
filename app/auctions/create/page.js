@@ -1,19 +1,17 @@
 import Layout from "@/components/layout/Layout";
 import CreateAuctionContent from "@/components/auctions/CreateAuctionContent";
-import { getServerSession } from "next-auth";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export const metadata = {
-  title: "Создать аукцион | АвтоАукцион",
-  description:
-    "Создайте новый автомобильный аукцион и продайте свой автомобиль",
+  title: "Создать аукцион",
+  description: "Создайте новый аукцион на нашей платформе",
 };
 
 export default async function CreateAuction() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session) {
-    redirect("/auth/signin?callbackUrl=/auctions/create");
+    redirect("/auth/signin");
   }
 
   return (
