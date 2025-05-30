@@ -33,10 +33,17 @@ export async function POST(request) {
   try {
     const { plan } = await request.json();
 
-    // Получаем текущего пользователя
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, session.user.id),
-    });
+    console.log(session);
+
+    // Get current user
+    const user = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .limit(1)
+      .then((rows) => rows[0]);
+
+    console.log(user);
 
     if (!user) {
       return NextResponse.json(

@@ -1,6 +1,11 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
+<<<<<<< Updated upstream
 import { authAdapter } from "@/lib/db/auth-adapter";
+=======
+import { DrizzleAdapter } from "@auth/drizzle-adapter";
+import { db } from "@/lib/db";
+>>>>>>> Stashed changes
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -9,7 +14,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
   ],
+<<<<<<< Updated upstream
   adapter: authAdapter,
+=======
+  adapter: DrizzleAdapter(db),
+>>>>>>> Stashed changes
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
