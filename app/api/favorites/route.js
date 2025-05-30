@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { favorites, auctions } from "@/lib/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
@@ -8,8 +7,8 @@ import { eq, desc, sql } from "drizzle-orm";
 // GET /api/favorites - получить избранные аукционы с пагинацией
 export async function GET(request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const session = await auth();
+    if (!session) {
       return NextResponse.json(
         { error: "Необходима авторизация" },
         { status: 401 },
@@ -74,8 +73,8 @@ export async function GET(request) {
 // POST /api/favorites - добавить аукцион в избранное
 export async function POST(request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const session = await auth();
+    if (!session) {
       return NextResponse.json(
         { error: "Необходима авторизация" },
         { status: 401 },
@@ -129,8 +128,8 @@ export async function POST(request) {
 // DELETE /api/favorites - удалить аукцион из избранного
 export async function DELETE(request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const session = await auth();
+    if (!session) {
       return NextResponse.json(
         { error: "Необходима авторизация" },
         { status: 401 },
