@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -8,24 +7,24 @@ import { SUBSCRIPTION_PLANS } from "@/lib/config/plans";
 
 // GET /api/plans - получить список планов
 export async function GET() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
 
   if (!session) {
-    return Response.json(
+    return NextResponse.json(
       { message: "Необходима авторизация" },
       { status: 401 },
     );
   }
 
-  return Response.json({ plans: SUBSCRIPTION_PLANS });
+  return NextResponse.json({ plans: SUBSCRIPTION_PLANS });
 }
 
 // POST /api/plans - обновить план пользователя
 export async function POST(request) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
 
   if (!session) {
-    return Response.json(
+    return NextResponse.json(
       { message: "Необходима авторизация" },
       { status: 401 },
     );
@@ -34,13 +33,20 @@ export async function POST(request) {
   try {
     const { plan } = await request.json();
 
-    // Получаем текущего пользователя
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, session.user.id),
-    });
+    console.log(session);
+
+    // Get current user
+    const user = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .limit(1)
+      .then((rows) => rows[0]);
+
+    console.log(user);
 
     if (!user) {
-      return Response.json(
+      return NextResponse.json(
         { message: "Пользователь не найден" },
         { status: 404 },
       );
@@ -54,7 +60,7 @@ export async function POST(request) {
 
     // Проверяем, не является ли новый план ниже текущего
     if (newPlanIndex < currentPlanIndex) {
-      return Response.json(
+      return NextResponse.json(
         { message: "Нельзя выбрать план ниже текущего уровня подписки" },
         { status: 400 },
       );
@@ -71,10 +77,10 @@ export async function POST(request) {
       })
       .where(eq(users.id, user.id));
 
-    return Response.json({ message: "План успешно обновлен" });
+    return NextResponse.json({ message: "План успешно обновлен" });
   } catch (error) {
     console.error("Error updating plan:", error);
-    return Response.json(
+    return NextResponse.json(
       { message: "Ошибка при обновлении плана" },
       { status: 500 },
     );

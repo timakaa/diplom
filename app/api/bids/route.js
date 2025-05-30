@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { bids, auctions, bidStatusEnum, users } from "@/lib/db/schema";
 import { eq, and, desc, count } from "drizzle-orm";
@@ -9,7 +8,7 @@ const MIN_BID_INCREMENT = 1000; // Минимальный шаг ставки в
 // POST /api/bids - создать новую ставку
 export async function POST(request) {
   // Проверка аутентификации
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session) {
     return Response.json({ error: "Необходима авторизация" }, { status: 401 });
   }
@@ -153,7 +152,7 @@ export async function POST(request) {
 
 // GET /api/bids - получить ставки пользователя с пагинацией
 export async function GET(request) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session) {
     return Response.json({ error: "Необходима авторизация" }, { status: 401 });
   }

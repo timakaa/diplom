@@ -1,32 +1,20 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Logo from "@/components/ui/Logo";
+import { Suspense } from "react";
 
-export default function SignIn() {
-  const router = useRouter();
+function SignInContent() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
 
   const handleGoogleSignIn = async () => {
-    try {
-      const result = await signIn("google", {
-        callbackUrl,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        console.error("Sign in error:", result.error);
-        return;
-      }
-
-      router.push(callbackUrl);
-    } catch (error) {
-      console.error("Sign in error:", error);
-    }
+    await signIn("google", {
+      callbackUrl,
+    });
   };
 
   return (
@@ -76,5 +64,13 @@ export default function SignIn() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignIn() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignInContent />
+    </Suspense>
   );
 }

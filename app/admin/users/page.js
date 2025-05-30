@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
@@ -11,7 +10,7 @@ export const metadata = {
 };
 
 export default async function AdminUsersPage() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
 
   // Проверяем авторизацию и права администратора
   if (!session) {

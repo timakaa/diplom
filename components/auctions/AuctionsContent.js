@@ -6,10 +6,10 @@ import AuctionPagination from "@/components/auctions/AuctionPagination";
 import AuctionSearch from "@/components/auctions/AuctionSearch";
 import AuctionResults from "@/components/auctions/AuctionResults";
 import { useAuctions } from "@/lib/hooks/useAuctions";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function AuctionsContent() {
+function AuctionsContentInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -177,5 +177,13 @@ export default function AuctionsContent() {
         </div>
       </section>
     </>
+  );
+}
+
+export default function AuctionsContent() {
+  return (
+    <Suspense fallback={<div>Loading auctions...</div>}>
+      <AuctionsContentInner />
+    </Suspense>
   );
 }

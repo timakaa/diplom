@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { auth } from "@/auth";
 import { db } from "@/lib/db/index.js";
 import { auctions, bids, auctionStatusEnum } from "@/lib/db/schema.js";
 import { eq, and, desc, count, inArray } from "drizzle-orm";
@@ -8,7 +7,7 @@ import { eq, and, desc, count, inArray } from "drizzle-orm";
 // GET /api/auctions/my - get current user's auctions
 export async function GET(request) {
   // Check authentication
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session) {
     return NextResponse.json(
       { error: "Authentication required" },

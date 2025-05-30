@@ -18,4 +18,4 @@ COPY . .
 EXPOSE 3000
 
 # Default command
-CMD ["pnpm", "dev:cron"] 
+CMD ["pnpm", "start:cron"] 

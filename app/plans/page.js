@@ -1,12 +1,11 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { auth } from "@/auth";
 import Layout from "@/components/layout/Layout";
 import { SUBSCRIPTION_PLANS } from "@/lib/config/plans";
 import { PlansClient } from "./PlansClient";
 import { redirect } from "next/navigation";
 
 export default async function PlansPage() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
 
   if (!session) {
     redirect("/auth/signin?callbackUrl=/plans");
