@@ -224,8 +224,8 @@ export default function CreateAuctionContent() {
         throw new Error(errorData.error || "Ошибка при создании аукциона");
       }
 
-      const auction = await response.json();
-      router.push(`/auctions/${auction.id}`);
+      const responseData = await response.json();
+      router.push(`/auctions/${responseData.auction.id}`);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -446,7 +446,7 @@ export default function CreateAuctionContent() {
                 />
               </div>
 
-              <div className='md:col-span-2'>
+              <div>
                 <label
                   htmlFor='startDate'
                   className='block text-sm font-medium mb-2'
@@ -468,7 +468,7 @@ export default function CreateAuctionContent() {
                 </p>
               </div>
 
-              <div className='md:col-span-2'>
+              <div>
                 <label
                   htmlFor='endDate'
                   className='block text-sm font-medium mb-2'

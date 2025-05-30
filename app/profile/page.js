@@ -10,6 +10,7 @@ import ProfileOverview from "@/components/profile/ProfileOverview";
 import ProfileBids from "@/components/profile/ProfileBids";
 import ProfileFavorites from "@/components/profile/ProfileFavorites";
 import ProfileSettings from "@/components/profile/ProfileSettings";
+import ProfileMyAuctions from "@/components/profile/ProfileMyAuctions";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { redirect } from "next/navigation";
 
@@ -76,6 +77,12 @@ export default function ProfilePage() {
               Обзор
             </TabsTrigger>
             <TabsTrigger
+              value='my-auctions'
+              className='px-2 py-1.5 text-xs sm:text-sm sm:px-3 flex-1'
+            >
+              Мои аукционы
+            </TabsTrigger>
+            <TabsTrigger
               value='bids'
               className='px-2 py-1.5 text-xs sm:text-sm sm:px-3 flex-1'
             >
@@ -101,6 +108,10 @@ export default function ProfilePage() {
               onTabChange={setActiveTab}
               user={session.user}
             />
+          </TabsContent>
+
+          <TabsContent value='my-auctions'>
+            <ProfileMyAuctions />
           </TabsContent>
 
           <TabsContent value='bids'>
