@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
+import { authAdapter } from "@/lib/db/auth-adapter";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -8,6 +9,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
   ],
+  adapter: authAdapter,
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
