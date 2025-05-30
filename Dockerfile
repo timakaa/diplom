@@ -14,8 +14,11 @@ RUN pnpm install
 # Copy source code
 COPY . .
 
+# Build the project
+RUN pnpm build
+
 # Expose port
 EXPOSE 3000
 
-# Default command
+# Start command
 CMD ["pnpm", "start:cron"] 

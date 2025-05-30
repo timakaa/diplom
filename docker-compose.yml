@@ -26,7 +26,7 @@ services:
     env_file:
       - .env
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - DATABASE_URL=postgresql://timakaaliebe:test@postgres:5432/diplom
     volumes:
       - .:/app
@@ -48,14 +48,13 @@ services:
     env_file:
       - .env
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - DATABASE_URL=postgresql://timakaaliebe:test@postgres:5432/diplom
     volumes:
       - .:/app
       - /app/node_modules
       - /app/.next
     working_dir: /app
-    command: pnpm dev:cron
 
 volumes:
   postgres_data:
