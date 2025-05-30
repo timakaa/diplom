@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev:cron": "concurrently \"next dev --turbopack\" \"node scripts/cron-worker.js\" \"node scripts/auction-cron.js\"",
-    "dev": "next dev --turbopack",
+    "dev:cron": "concurrently \"next dev\" \"node scripts/cron-worker.js\" \"node scripts/auction-cron.js\"",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "start:cron": "concurrently \"next start\" \"node scripts/cron-worker.js\" \"node scripts/auction-cron.js\"",
