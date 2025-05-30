@@ -19,6 +19,7 @@ export default async function AdminPage() {
 
   // Проверяем наличие прав администратора
   if (!session.user.isAdmin) {
+    console.log(session.user);
     redirect("/");
   }
 

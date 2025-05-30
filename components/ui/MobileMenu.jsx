@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X, User, LogOut, Wallet, ShieldCheck } from "lucide-react";
+import { X, User, LogOut, Wallet, ShieldCheck, Plus } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import {
   ResponsiveModal,
@@ -137,6 +137,16 @@ export default function MobileMenu({ isOpen, onClose }) {
                 </div>
 
                 {/* Личный кабинет и другие опции */}
+                <Link href='/auctions/create' onClick={onClose}>
+                  <Button
+                    variant='outline'
+                    className='w-full justify-center gap-2'
+                  >
+                    <Plus className='h-4 w-4' />
+                    Создать аукцион
+                  </Button>
+                </Link>
+
                 <Link href='/profile' onClick={onClose}>
                   <Button variant='outline' className='w-full justify-center'>
                     Личный кабинет

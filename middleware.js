@@ -80,9 +80,9 @@ export async function middleware(request) {
 
 export const config = {
   matcher: [
-    "/profile/:path*",
-    "/plans/:path*",
-    "/auth/:path*",
-    "/admin/:path*",
+    // "/profile/:path*",
+    // "/plans/:path*",
+    // "/auth/:path*",
+    // "/admin/:path*",
   ],
 };

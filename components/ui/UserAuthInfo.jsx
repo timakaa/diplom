@@ -95,6 +95,13 @@ export default function UserAuthInfo() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator className='my-2' />
 
+            <Link href='/auctions/create'>
+              <DropdownMenuItem className='cursor-pointer px-3 py-2.5 rounded-md'>
+                <Plus className='mr-3 h-5 w-5' />
+                <span>Создать аукцион</span>
+              </DropdownMenuItem>
+            </Link>
+
             <Link href='/profile'>
               <DropdownMenuItem className='cursor-pointer px-3 py-2.5 rounded-md'>
                 <UserCircle className='mr-3 h-5 w-5' />
@@ -148,6 +155,13 @@ export default function UserAuthInfo() {
               {session.user.name || "Пользователь"}
             </DropdownMenuLabel>
             <DropdownMenuSeparator className='my-2' />
+
+            <Link href='/auctions/create'>
+              <DropdownMenuItem className='cursor-pointer px-3 py-2.5 rounded-md'>
+                <Plus className='mr-3 h-5 w-5' />
+                <span>Создать аукцион</span>
+              </DropdownMenuItem>
+            </Link>
 
             <Link href='/profile'>
               <DropdownMenuItem className='cursor-pointer px-3 py-2.5 rounded-md'>

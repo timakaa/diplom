@@ -5,7 +5,7 @@ import { eq, count } from "drizzle-orm";
 
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Get auction by ID
     const auction = await db

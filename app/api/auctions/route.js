@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db/index.js";
 import { auctions, bids, auctionStatusEnum } from "@/lib/db/schema.js";
 import { desc } from "drizzle-orm";
@@ -149,6 +151,142 @@ export async function GET(request) {
     console.error("Error fetching auctions:", error);
     return NextResponse.json(
       { error: "Failed to fetch auctions" },
+      { status: 500 },
+    );
+  }
+}
+
+// POST /api/auctions - create a new auction
+export async function POST(request) {
+  // Check authentication
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json(
+      { error: "Authentication required" },
+      { status: 401 },
+    );
+  }
+
+  try {
+    const body = await request.json();
+    const {
+      title,
+      description,
+      startingPrice,
+      startDate,
+      endDate,
+      brand,
+      model,
+      year,
+      mileage,
+      imageUrl,
+    } = body;
+
+    // Validate required fields
+    if (
+      !title ||
+      !description ||
+      !startingPrice ||
+      !startDate ||
+      !endDate ||
+      !brand ||
+      !model ||
+      !year ||
+      !mileage
+    ) {
+      return NextResponse.json(
+        { error: "All required fields must be provided" },
+        { status: 400 },
+      );
+    }
+
+    // Validate data types and ranges
+    const parsedStartingPrice = parseFloat(startingPrice);
+    const parsedYear = parseInt(year);
+    const parsedMileage = parseInt(mileage);
+
+    if (isNaN(parsedStartingPrice) || parsedStartingPrice <= 0) {
+      return NextResponse.json(
+        { error: "Starting price must be a positive number" },
+        { status: 400 },
+      );
+    }
+
+    if (
+      isNaN(parsedYear) ||
+      parsedYear < 1900 ||
+      parsedYear > new Date().getFullYear() + 1
+    ) {
+      return NextResponse.json(
+        { error: "Year must be a valid year" },
+        { status: 400 },
+      );
+    }
+
+    if (isNaN(parsedMileage) || parsedMileage < 0) {
+      return NextResponse.json(
+        { error: "Mileage must be a non-negative number" },
+        { status: 400 },
+      );
+    }
+
+    // Validate dates
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    const now = new Date();
+
+    if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
+      return NextResponse.json(
+        { error: "Invalid date format" },
+        { status: 400 },
+      );
+    }
+
+    if (startDateObj < now) {
+      return NextResponse.json(
+        { error: "Start date cannot be in the past" },
+        { status: 400 },
+      );
+    }
+
+    if (endDateObj <= startDateObj) {
+      return NextResponse.json(
+        { error: "End date must be after start date" },
+        { status: 400 },
+      );
+    }
+
+    // Create the auction
+    const [newAuction] = await db
+      .insert(auctions)
+      .values({
+        userId: session.user.id,
+        title: title.trim(),
+        description: description.trim(),
+        startingPrice: parsedStartingPrice,
+        currentPrice: parsedStartingPrice,
+        startDate: startDateObj,
+        endDate: endDateObj,
+        brand: brand.trim(),
+        model: model.trim(),
+        year: parsedYear,
+        mileage: parsedMileage,
+        imageUrl: imageUrl?.trim() || null,
+        status: auctionStatusEnum.ACTIVE,
+      })
+      .returning();
+
+    return NextResponse.json(
+      {
+        message: "Auction created successfully",
+        auction: newAuction,
+      },
+      { status: 201 },
+    );
+  } catch (error) {
+    console.error("Error creating auction:", error);
+    return NextResponse.json(
+      { error: "Failed to create auction" },
       { status: 500 },
     );
   }

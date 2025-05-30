@@ -11,6 +11,7 @@ import ProfileBids from "@/components/profile/ProfileBids";
 import ProfileFavorites from "@/components/profile/ProfileFavorites";
 import ProfileSettings from "@/components/profile/ProfileSettings";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { redirect } from "next/navigation";
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
@@ -27,6 +28,12 @@ export default function ProfilePage() {
     },
     enabled: !!session?.user,
   });
+
+  useEffect(() => {
+    if (!session && status !== "loading") {
+      redirect("/auth/signin?callbackUrl=/profile");
+    }
+  }, [session, status]);
 
   const favoriteAuctions = favoritesData?.favorites || [];
 

@@ -57,6 +57,13 @@
       "when": 1743201457453,
       "tag": "0007_round_ultron",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1748546124559,
+      "tag": "0008_small_betty_ross",
+      "breakpoints": true
     }
   ]
 }

@@ -8,7 +8,7 @@ import { eq, and, desc, count } from "drizzle-orm";
  */
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
 
     // Parse pagination parameters
