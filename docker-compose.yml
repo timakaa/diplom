@@ -50,11 +50,6 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://timakaaliebe:test@postgres:5432/diplom
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/.next
-    working_dir: /app
 
 volumes:
   postgres_data:

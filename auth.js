@@ -12,7 +12,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
   ],
-  adapter: authAdapter,
+  // Only use adapter if it's available (not null during build time)
+  ...(authAdapter && { adapter: authAdapter }),
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -29,21 +30,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.id = user.id;
 
-        try {
-          // Получаем информацию о правах пользователя из базы данных
-          const dbUser = await db.query.users.findFirst({
-            where: eq(users.id, user.id),
-          });
+        // Only try to access database if it's available
+        if (db) {
+          try {
+            // Get user permissions from database
+            const dbUser = await db.query.users.findFirst({
+              where: eq(users.id, user.id),
+            });
 
-          // Явно устанавливаем isAdmin как boolean
-          token.isAdmin = dbUser?.isAdmin === true;
-        } catch (error) {
-          console.error("Error in JWT callback:", error);
+            // Explicitly set isAdmin as boolean
+            token.isAdmin = dbUser?.isAdmin === true;
+          } catch (error) {
+            console.error("Error in JWT callback:", error);
+          }
         }
       }
 
-      // При обновлении сессии также проверяем значение isAdmin
-      if (trigger === "update" && token?.id) {
+      // When updating session, also check isAdmin value
+      if (trigger === "update" && token?.id && db) {
         try {
           const dbUser = await db.query.users.findFirst({
             where: eq(users.id, token.id),
@@ -60,9 +64,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return token;
     },
     async session({ session, token, user }) {
-      if (session?.user) {
+      if (session?.user && db) {
         try {
-          // Получаем полные данные пользователя из базы
+          // Get full user data from database
           const dbUser = await db.query.users.findFirst({
             where: eq(users.id, token.id),
           });
