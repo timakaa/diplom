@@ -28,7 +28,7 @@ export default function HeroBanner() {
           </div>
           <div className='relative h-[300px] overflow-hidden rounded-xl lg:h-[400px] xl:h-[500px]'>
             <Image
-              src='/placeholder.svg?height=500&width=800'
+              src='/intro.jpg'
               width={800}
               height={500}
               alt='Элитный автомобиль на аукционе'

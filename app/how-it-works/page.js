@@ -95,7 +95,7 @@ export default function HowItWorks() {
             </div>
             <div className='relative h-[300px] overflow-hidden rounded-xl lg:h-[400px]'>
               <Image
-                src='/placeholder.svg?height=400&width=500'
+                src='/how-it-works.jpg'
                 width={500}
                 height={400}
                 alt='Процесс автомобильного аукциона'
@@ -137,7 +137,7 @@ export default function HowItWorks() {
             <div className='flex flex-col justify-center space-y-6'>
               <div className='relative h-[300px] overflow-hidden rounded-xl mb-6'>
                 <Image
-                  src='/placeholder.svg?height=300&width=400'
+                  src='/how-it-works-intro.webp'
                   width={400}
                   height={300}
                   alt='Покупка автомобиля на аукционе'
@@ -213,30 +213,6 @@ export default function HowItWorks() {
                 <ChevronRight className='h-4 w-4' />
               </Button>
             </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Видео инструкция */}
-      <section className='w-full py-12 md:py-24 lg:py-32'>
-        <div className='container px-4 md:px-6'>
-          <div className='flex flex-col items-center justify-center space-y-4 text-center mb-10'>
-            <div className='space-y-2'>
-              <h2 className='text-3xl font-bold tracking-tighter md:text-4xl'>
-                Видео-инструкция
-              </h2>
-              <p className='max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed'>
-                Посмотрите короткое видео о том, как пользоваться нашей
-                платформой
-              </p>
-            </div>
-          </div>
-
-          <div className='mx-auto max-w-4xl aspect-video bg-muted/90 rounded-xl flex items-center justify-center'>
-            <div className='text-center'>
-              <p className='text-muted-foreground mb-4'>Видео демонстрация</p>
-              <Button variant='outline'>Воспроизвести видео</Button>
-            </div>
           </div>
         </div>
       </section>
