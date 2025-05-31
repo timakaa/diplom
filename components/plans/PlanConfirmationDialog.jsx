@@ -27,10 +27,11 @@ export function PlanConfirmationDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Подтверждение выбора плана</DialogTitle>
+          <DialogTitle>Создание заказа на план</DialogTitle>
           <DialogDescription>
-            Вы уверены, что хотите выбрать план {planName} за {formattedPrice} в
-            месяц? С вашего баланса будет списана соответствующая сумма.
+            Вы собираетесь создать заказ на план {planName} за {formattedPrice}{" "}
+            в месяц. После подтверждения вы будете перенаправлены на страницу
+            оплаты, где сможете завершить покупку с помощью QR-кода.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -38,7 +39,7 @@ export function PlanConfirmationDialog({
             Отмена
           </Button>
           <Button onClick={onConfirm} disabled={isLoading}>
-            {isLoading ? "Подтверждение..." : "Подтвердить"}
+            {isLoading ? "Создание заказа..." : "Создать заказ"}
           </Button>
         </DialogFooter>
       </DialogContent>

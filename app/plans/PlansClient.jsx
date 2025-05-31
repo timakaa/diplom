@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import PlanCard from "@/components/plans/PlanCard";
 import { PlanConfirmationDialog } from "@/components/plans/PlanConfirmationDialog";
+import { QRPaymentDialog } from "@/components/plans/QRPaymentDialog";
 import { useSession } from "next-auth/react";
 
 export function PlansClient({ plans, currentPlan }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [showQRPayment, setShowQRPayment] = useState(false);
   const { data: session, update } = useSession();
 
   // Получаем индекс текущего плана
@@ -31,7 +33,12 @@ export function PlansClient({ plans, currentPlan }) {
     setSelectedPlan(plan);
   };
 
-  const handleConfirm = async () => {
+  const handleCreateOrder = async () => {
+    // Закрыть диалог подтверждения и показать диалог QR-оплаты
+    setShowQRPayment(true);
+  };
+
+  const handleQRPaymentContinue = async () => {
     try {
       setIsLoading(true);
       const response = await fetch("/api/plans", {
@@ -61,7 +68,7 @@ export function PlansClient({ plans, currentPlan }) {
         title: "Успешно",
         description: "План успешно обновлен",
       });
-      setSelectedPlan(null);
+
       router.refresh();
     } catch (error) {
       toast({
@@ -72,6 +79,11 @@ export function PlansClient({ plans, currentPlan }) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleCloseQRPayment = () => {
+    setShowQRPayment(false);
+    setSelectedPlan(null);
   };
 
   return (
@@ -101,9 +113,18 @@ export function PlansClient({ plans, currentPlan }) {
       </div>
 
       <PlanConfirmationDialog
-        isOpen={!!selectedPlan}
+        isOpen={!!selectedPlan && !showQRPayment}
         onClose={() => setSelectedPlan(null)}
-        onConfirm={handleConfirm}
+        onConfirm={handleCreateOrder}
+        planName={selectedPlan?.name}
+        price={selectedPlan?.price}
+        isLoading={isLoading}
+      />
+
+      <QRPaymentDialog
+        isOpen={showQRPayment}
+        onClose={handleCloseQRPayment}
+        onContinue={handleQRPaymentContinue}
         planName={selectedPlan?.name}
         price={selectedPlan?.price}
         isLoading={isLoading}

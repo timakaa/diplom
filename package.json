@@ -40,6 +40,7 @@
     "pg": "^8.14.1",
     "postcss": "^8.5.3",
     "postgres": "^3.4.5",
+    "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^3.0.2",
@@ -49,6 +50,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/qrcode": "^1.5.5",
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.1.2",
     "dotenv": "^16.4.7",
