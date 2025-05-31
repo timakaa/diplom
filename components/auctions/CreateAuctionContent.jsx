@@ -33,7 +33,6 @@ export default function CreateAuctionContent() {
     mileage: "",
     startingPrice: "",
     endDate: "",
-    startDate: "",
     imageUrl: "",
   });
 
@@ -114,7 +113,6 @@ export default function CreateAuctionContent() {
       "mileage",
       "startingPrice",
       "endDate",
-      "startDate",
     ];
 
     for (const field of required) {
@@ -147,22 +145,15 @@ export default function CreateAuctionContent() {
 
     // Validate end time
     const endDate = new Date(formData.endDate);
-    const startDate = new Date(formData.startDate);
     const now = new Date();
-    const minEndTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
 
-    if (!formData.startDate || !formData.endDate) {
-      setError("Время начала и окончания аукциона обязательны");
+    if (!formData.endDate) {
+      setError("Время окончания аукциона обязательно");
       return false;
     }
 
-    if (startDate <= minEndTime) {
-      setError("Время начала аукциона должно быть не менее чем через 24 часа");
-      return false;
-    }
-
-    if (endDate <= startDate) {
-      setError("Время окончания должно быть после времени начала");
+    if (endDate <= now) {
+      setError("Время окончания должно быть в будущем");
       return false;
     }
 
@@ -179,7 +170,6 @@ export default function CreateAuctionContent() {
       mileage: "Пробег",
       startingPrice: "Стартовая цена",
       endDate: "Время окончания",
-      startDate: "Время начала",
     };
     return labels[field] || field;
   };
@@ -213,7 +203,6 @@ export default function CreateAuctionContent() {
           year: parseInt(formData.year),
           mileage: parseInt(formData.mileage),
           startingPrice: parseInt(formData.startingPrice),
-          startDate: new Date(formData.startDate).toISOString(),
           endDate: new Date(formData.endDate).toISOString(),
           imageUrl: formData.imageUrl || null,
         }),
@@ -233,11 +222,10 @@ export default function CreateAuctionContent() {
     }
   };
 
-  // Get minimum date for start/end time (24 hours from now)
+  // Get minimum date for end time (current time)
   const getMinEndTime = () => {
     const now = new Date();
-    const minTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-    return minTime.toISOString().slice(0, 16); // Format for datetime-local input
+    return now.toISOString().slice(0, 16); // Format for datetime-local input
   };
 
   return (
@@ -448,28 +436,6 @@ export default function CreateAuctionContent() {
 
               <div>
                 <label
-                  htmlFor='startDate'
-                  className='block text-sm font-medium mb-2'
-                >
-                  <Clock className='h-4 w-4 inline mr-1' />
-                  Время начала аукциона *
-                </label>
-                <Input
-                  id='startDate'
-                  name='startDate'
-                  type='datetime-local'
-                  value={formData.startDate}
-                  onChange={handleInputChange}
-                  min={getMinEndTime()}
-                  required
-                />
-                <p className='text-sm text-muted-foreground mt-1'>
-                  Аукцион должен начаться не раньше чем через 24 часа
-                </p>
-              </div>
-
-              <div>
-                <label
                   htmlFor='endDate'
                   className='block text-sm font-medium mb-2'
                 >
@@ -486,7 +452,7 @@ export default function CreateAuctionContent() {
                   required
                 />
                 <p className='text-sm text-muted-foreground mt-1'>
-                  Время окончания должно быть после времени начала
+                  Время окончания должно быть в будущем
                 </p>
               </div>
             </div>

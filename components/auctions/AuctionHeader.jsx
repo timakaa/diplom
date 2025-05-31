@@ -13,10 +13,6 @@ export default function AuctionHeader({
     <div className='flex justify-between items-start'>
       <div>
         <h1 className='text-3xl font-bold'>{auction.title}</h1>
-        <p className='text-muted-foreground mt-2'>
-          {auction.description?.substring(0, 150)}
-          {auction.description?.length > 150 ? "..." : ""}
-        </p>
       </div>
       <Button
         variant={isFavorite ? "default" : "outline"}

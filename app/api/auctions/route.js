@@ -79,7 +79,10 @@ export async function GET(request) {
     }
 
     // Add sorting and pagination
-    query = query.orderBy(desc(auctions.createdAt)).limit(limit).offset(offset);
+    query = query
+      .orderBy(desc(auctions.createdAt), desc(auctions.id))
+      .limit(limit)
+      .offset(offset);
 
     // Execute queries
     const [results, totalCountResult] = await Promise.all([query, countQuery]);
@@ -146,7 +149,6 @@ export async function POST(request) {
       title,
       description,
       startingPrice,
-      startDate,
       endDate,
       brand,
       model,
@@ -204,26 +206,11 @@ export async function POST(request) {
     }
 
     // Date validation
-    const startDateObj = new Date(startDate);
     const endDateObj = new Date(endDate);
 
-    if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
+    if (isNaN(endDateObj.getTime())) {
       return NextResponse.json(
         { error: "Invalid date format" },
-        { status: 400 },
-      );
-    }
-
-    if (startDateObj < new Date()) {
-      return NextResponse.json(
-        { error: "Start date cannot be in the past" },
-        { status: 400 },
-      );
-    }
-
-    if (endDateObj <= startDateObj) {
-      return NextResponse.json(
-        { error: "End date must be after start date" },
         { status: 400 },
       );
     }
@@ -235,8 +222,8 @@ export async function POST(request) {
         title: title.trim(),
         description: description.trim(),
         startingPrice: parsedStartingPrice,
+        startDate: new Date(),
         currentPrice: parsedStartingPrice,
-        startDate: startDateObj,
         endDate: endDateObj,
         brand: brand.trim(),
         model: model.trim(),
@@ -244,9 +231,7 @@ export async function POST(request) {
         mileage: parsedMileage,
         imageUrl: imageUrl?.trim() || null,
         userId: session.user.id,
-        status: "draft",
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        status: "active",
       })
       .returning();
 
