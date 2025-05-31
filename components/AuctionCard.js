@@ -77,17 +77,27 @@ export default function AuctionCard({ auction }) {
         </div>
       )}
       <div className='aspect-[16/9] overflow-hidden rounded-lg'>
-        <Image
-          src='/placeholder.svg'
-          alt={auction.title}
-          width={400}
-          height={200}
-          className={`object-cover w-full h-full ${
-            isEnded
-              ? "opacity-80"
-              : "group-hover:scale-105 transition-transform duration-200"
-          }`}
-        />
+        {auction.imageUrl ? (
+          <Image
+            src={auction.imageUrl}
+            alt={auction.title}
+            width={400}
+            height={200}
+            className={`object-cover w-full h-full ${
+              isEnded ? "opacity-80" : "transition-transform duration-200"
+            }`}
+          />
+        ) : (
+          <Image
+            src='/placeholder.svg'
+            alt={auction.title}
+            width={400}
+            height={200}
+            className={`object-cover w-full h-full ${
+              isEnded ? "opacity-80" : "transition-transform duration-200"
+            }`}
+          />
+        )}
       </div>
       <div className='mt-4 space-y-2'>
         <h3 className='font-semibold leading-none tracking-tight'>

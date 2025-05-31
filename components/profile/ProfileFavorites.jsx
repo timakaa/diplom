@@ -105,13 +105,23 @@ export default function ProfileFavorites() {
                     className='border rounded-lg p-4 flex gap-4'
                   >
                     <div className='bg-muted rounded-md overflow-hidden w-28 h-full flex-shrink-0'>
-                      <Image
-                        src={"/placeholder.svg"}
-                        width={180}
-                        height={124}
-                        alt={auction.title}
-                        className='object-cover w-full h-full'
-                      />
+                      {auction.imageUrl ? (
+                        <Image
+                          src={auction.imageUrl}
+                          width={180}
+                          height={124}
+                          alt={auction.title}
+                          className='object-cover w-full h-full'
+                        />
+                      ) : (
+                        <Image
+                          src={"/placeholder.svg"}
+                          width={180}
+                          height={124}
+                          alt={auction.title}
+                          className='object-cover w-full h-full'
+                        />
+                      )}
                     </div>
                     <div className='flex-1'>
                       <div className='flex justify-between items-start'>

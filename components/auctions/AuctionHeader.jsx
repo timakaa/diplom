@@ -27,7 +27,7 @@ export default function AuctionHeader({
           removeFromFavoritesPending ||
           isLoadingFavorites
         }
-        className={`transition-all ${
+        className={`transition-all px-2 ${
           isFavorite
             ? "bg-primary hover:bg-primary/90"
             : "hover:text-primary hover:border-primary"

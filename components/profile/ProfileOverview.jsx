@@ -196,13 +196,23 @@ export default function ProfileOverview({
                   >
                     <div className='flex items-center gap-3'>
                       <div className='bg-muted rounded-md overflow-hidden w-16 h-12 flex-shrink-0'>
-                        <Image
-                          src='/placeholder.svg'
-                          width={64}
-                          height={48}
-                          alt={auction.title || "Аукцион"}
-                          className='object-cover w-full h-full'
-                        />
+                        {auction.imageUrl ? (
+                          <Image
+                            src={auction.imageUrl}
+                            width={64}
+                            height={48}
+                            alt={auction.title || "Аукцион"}
+                            className='object-cover w-full h-full'
+                          />
+                        ) : (
+                          <Image
+                            src='/placeholder.svg'
+                            width={64}
+                            height={48}
+                            alt={auction.title || "Аукцион"}
+                            className='object-cover w-full h-full'
+                          />
+                        )}
                       </div>
                       <div>
                         <p className='font-medium'>

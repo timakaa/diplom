@@ -273,7 +273,10 @@ export default function AuctionDetails({ id }) {
         {/* Основная информация */}
         <div className='lg:col-span-2 space-y-8'>
           {/* Галерея изображений */}
-          <AuctionImage title={auction.title} />
+          <AuctionImage
+            title={`${auction.title}`}
+            imageSrc={auction.imageUrl || "/placeholder.svg"}
+          />
 
           {/* Информация об автомобиле */}
           <div className='space-y-6'>
